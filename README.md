@@ -1,6 +1,6 @@
 # Welcome to Exports README!
 
-Running this **container** is relatively easy if you know what exports are neccessary and why. If you here to just quickly complete your work without getting to know why these exports are necessary, [this](#TL;DR) might be just for you.
+Running this **container** is relatively easy if you know what exports are neccessary and why. If you here to just quickly complete your work without getting to know why these exports are necessary, please head to the end of this README.
 
 
 ## Token
