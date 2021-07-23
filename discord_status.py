@@ -26,7 +26,7 @@ async def load_dictionary_koders():
         totaltime = []
         for x in ids:
             totaltime.append(int(data[x]['total_time'].total_seconds()))
-        plt.plot(ids,totaltime)
+        plt.bar(ids,totaltime)
         plt.show()
     # runs after every 24 hours
     # restoring the dictionary, setting all values to 0
