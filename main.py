@@ -29,10 +29,10 @@ bot = commands.Bot(command_prefix="~")          #
 logger = embeds.Logger("kourage-onboarding")    #
                                                 #
 message_ids = {                                 #
-        866592404891238400 : 'rules',           #
-        866665183468060692 : 'client',          #
-        867370078349557760 : 'career',          #
-        866668351026364456 : 'partner'          #
+        868871284245803009 : 'rules',           #
+        868871280655499286 : 'client',          #
+        868871141526224928 : 'career',          #
+        868871141526224928 : 'partner'          #
         }                                       #
                                                 #
 admin_id = 511138541724631050                   #
@@ -76,9 +76,7 @@ async def on_ready():
         logger.info('Career Ticket Channel: ' + str(career_ticket_channel.id) + "/" + career_ticket_channel.name)
         logger.info('Client Ticket Channel: ' + str(client_ticket_channel.id) + "/" + client_ticket_channel.name)
         logger.info('Partner Ticket Channel: ' + str(partner_ticket_channel.id) + "/" + partner_ticket_channel.name)
-        
-
-
+    
     except Exception as err:
         logger.error("Error in '~on_ready': " + str(err))
         return
@@ -92,7 +90,9 @@ async def on_ready():
             Discord_Id TEXT,
             Name TEXT,
             Phone INTEGER,
+            Address TEXT,
             Mail TEXT,
+            Profession TEXT,
             Resume TEXT
             )
         ''')
@@ -210,8 +210,8 @@ async def shortlist(ctx,*argv):
         for i in bad_chars:
             email=email.replace(i, '')
         print(email)
-        #email_file.send_Email(email,email_input)
-        #print("email sent:"+str(username))
+    #email_file.send_Email(email,email_input)
+    #print("email sent:"+str(username))
 
 @bot.command()
 async def reject(ctx,*argv):
@@ -246,9 +246,9 @@ async def reject(ctx,*argv):
         #email_file.send_Email(email,email_input)
         #print("email sent:"+str(username))
 
-###
-# archive
-###
+#################################################
+#                   archive                     #
+#################################################
 @bot.command()
 async def archive(ctx):
     if ctx.author.id != admin_id:

@@ -24,11 +24,9 @@ async def on_react(bot, ctx, user, ticket_channel, _logger):
     global logger
     logger = _logger
     logger.info('~on_ready called for ' + str(user.id))
-    cursor = sqlite3.connect('Career_DB.sqlite')
-    role_dict = {1 : 'Design', 2 : 'Development', 3 : 'Content', 4 : 'Marketing'}
-
     welcome_embed = discord.Embed(
-            title="TICKET CREATION",
+            title="TICKET",
+            description = "You're almost there!\nPlease provide the following details.",
             colour=0x11806a
             )
     welcome_embed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
@@ -37,19 +35,58 @@ async def on_react(bot, ctx, user, ticket_channel, _logger):
     welcome_embed.timestamp = datetime.datetime.utcnow()
     welcome=await ctx.send(embed=welcome_embed)
 
+    cursor = sqlite3.connect('Career_DB.sqlite')
+
+    nameEmbed=discord.Embed(title="",description="What's your good name?",colour=0x11806a)
+    name_sent = await ctx.send(embed = nameEmbed)
+    name = await embeds.ctx_input(ctx, bot, name_sent, user = user, type = "name")
+    if not name:
+        await welcome.delete()
+        raise Exception("'name' timed out.")
+    logger.info("'name' input successful")
+
+    addressEmbed=discord.Embed(title="",description="Please enter your address.",colour=0x11806a)
+    address_sent = await ctx.send(embed = addressEmbed)
+    address = await embeds.ctx_input(ctx, bot, address_sent, user = user)
+    if not address:
+        await welcome.delete()
+        raise Exception("'address' timed out.")
+    logger.info("'address' input successful")
+
+    emailEmbed=discord.Embed(title="",description="Please provide your email-id.",colour=0x11806a)
+    email_sent = await ctx.send(embed = emailEmbed)
+    email = await embeds.ctx_input(ctx, bot, email_sent, user = user)
+    if not email:
+        await welcome.delete()
+        raise Exception("'email' timed out.")
+    logger.info("'email' input successful")
+
+    contactEmbed=discord.Embed(title="",description="Please enter your contact number.",colour=0x11806a)
+    contact_sent = await ctx.send(embed = contactEmbed)
+    contact = await embeds.ctx_input(ctx, bot, contact_sent, user = user)
+    if not contact:
+        await welcome.delete()
+        raise Exception("'contact' timed out.")
+    logger.info("'contact' input successful")
+
+    professionEmbed=discord.Embed(title="",description="Are you a college student or a working professional?",colour=0x11806a)
+    profession_sent = await ctx.send(embed = professionEmbed)
+    profession = await embeds.ctx_input(ctx, bot, profession_sent, user = user)
+    if not profession:
+        await welcome.delete()
+        raise Exception("'profession' timed out.")
+    logger.info("'profession' input successful")
+
+    role_dict = {1 : 'Design', 2 : 'Development', 3 : 'Content', 4 : 'Marketing'}
     apply_roleEmbed = discord.Embed(
         colour = 0x28da5b,
-        title = 'In which role you wanted to apply at Koders?',
-        description = '''Enter your interested role name.
-        1. Design
-        2. Developer
-        3. Content
-        4. Marketing'''
+        title = '',
+        description = '''What career opportunity are you looking forward at Koders?
+        > 1. Design
+        > 2. Developer
+        > 3. Content
+        > 4. Marketing'''
     )
-    apply_roleEmbed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    apply_roleEmbed.set_footer(text="Made with ❤️️  by Koders")
-    apply_roleEmbed.timestamp = datetime.datetime.utcnow()
-
     apply_role = await ctx.send(embed = apply_roleEmbed)
     role_no, __tmp = await embeds.take_reaction(ctx, 4, apply_role, bot, user = user)
     if not role_no:
@@ -59,64 +96,11 @@ async def on_react(bot, ctx, user, ticket_channel, _logger):
     role = role_dict[role_no]
     logger.info("'role' input successful.")
 
-    nameEmbed = discord.Embed(
-        colour = 0x28da5b,
-        title = 'What’s your good name?',
-        description = " Write your full name."
-    )
-    nameEmbed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    nameEmbed.set_footer(text="Made with ❤️️  by Koders")
-    nameEmbed.timestamp = datetime.datetime.utcnow()
-
-    name_sent = await ctx.send(embed = nameEmbed)
-    name = await embeds.ctx_input(ctx, bot, name_sent, user = user, type = "name")
-    if not name:
-        await welcome.delete()
-        raise Exception("'name' timed out.")
-    logger.info("'name' input successful")
-
-    contactEmbed = discord.Embed(
-        colour = 0x28da5b,
-        title = 'What is your contact number?',
-        description = "Enter the number on which you can be contacted at any hour of the day. "
-        )
-    contactEmbed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    contactEmbed.set_footer(text="Made with ❤️️  by Koders")
-    contactEmbed.timestamp = datetime.datetime.utcnow()
-
-    contact_sent = await ctx.send(embed = contactEmbed)
-
-    contact = await embeds.ctx_input(ctx, bot, contact_sent, user = user, type = "phone")
-    if not contact:
-        await welcome.delete()
-        raise Exception("'contact' timed out.")
-    logger.info("'contact' input successful.")
-
-    emailEmbed = discord.Embed(
-        colour = 0x28da5b,
-        title = 'Enter your official email id?',
-        description = " Make sure it’s free of typos. "
-    )
-    emailEmbed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    emailEmbed.set_footer(text="Made with ❤️️  by Koders")
-    emailEmbed.timestamp = datetime.datetime.utcnow()
-
-    email_sent = await ctx.send(embed = emailEmbed)
-    email = await embeds.ctx_input(ctx, bot, email_sent, user = user, type = "email")
-    if not email:
-        await welcome.delete()
-        raise Exception("'email' timed out.")
-    logger.info("'email' input successful.")
-
     resumeEmbed = discord.Embed(
         colour = 0x28da5b,
-        title = 'Submit your Resume in pdf form.',
-        description = " Make sure it’s free of typos. "
+        title = '',
+        description = "Please provide your resume."
     )
-    resumeEmbed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    resumeEmbed.set_footer(text="Made with ❤️️  by Koders")
-    resumeEmbed.timestamp = datetime.datetime.utcnow()
-
     resume_sent = await ctx.send(embed = resumeEmbed)
     try:
         msg = await bot.wait_for(
@@ -166,20 +150,22 @@ async def on_react(bot, ctx, user, ticket_channel, _logger):
     profileEmbed.set_footer(text="Made with ❤️️  by Koders")
     profileEmbed.timestamp = datetime.datetime.utcnow()
 
-    profileEmbed.add_field(name='Applied Role', value = f'{role}', inline=True)
-    profileEmbed.add_field(name='Name', value = f'{name}', inline=True)
-    profileEmbed.add_field(name='Phone Number', value = f'{contact}', inline=True)
-    profileEmbed.add_field(name='Mail Id', value = f'{email}', inline=True)
+    profileEmbed.add_field(name='Applied Role: ', value = f'{role}', inline=True)
+    profileEmbed.add_field(name='Name: ', value = f'{name}', inline=True)
+    profileEmbed.add_field(name='Address: ', value = f'{address}', inline=True)
+    profileEmbed.add_field(name='Email Id: ', value = f'{email}', inline=True)
+    profileEmbed.add_field(name='Contact Number: ', value = f'{contact}', inline=True)
+    profileEmbed.add_field(name='Profession: ', value = f'{profession}', inline=True)
     profileEmbed.add_field(name='Resume', value = f'{resume}', inline=True)
 
     await ticket_channel.send(embed = profileEmbed)
 
     cursor.execute('''INSERT INTO Career
-    (Role, Discord_Id, Name, Phone, Mail, Resume) VALUES (?, ?, ?, ?, ?, ?)''', (role, user_id, name, contact, email, resume))
+    (Role, Discord_Id, Name, Phone, Address, Mail, Profession, Resume) VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (role, user_id, name, contact, address, email, profession, resume))
 
     cursor.commit()
     cursor.close
-    await ctx.send(user.mention + ", Thank you for filling out data. We'll get back to you soon", delete_after = 60)
+    await ctx.send(user.mention + ", Thank You for your valuable time! We will get in touch with you as soon as possible.\nKeep Growing, Keep Koding.", delete_after = 60)
     logger.success('Data written to DB successfully')
     logger.success("'~on_react' completed successfully")
 
