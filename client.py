@@ -90,7 +90,7 @@ async def on_react(bot, ctx, user, ticket_channel, _logger):
 
     await welcome.delete()
 
-    ctx.send('Thank you for your valuable time! We will get in touch with you as soon as possible.', delete_after = 60)
+    await ctx.send('Thank you for your valuable time! We will get in touch with you as soon as possible.', delete_after = 60)
     # For the sake of record, we can save the ticket details on a ticket channel.
     sendEmbed=discord.Embed(
             title="NEW PROJECT REQUEST\n",

@@ -93,7 +93,7 @@ def validate_name(name):
 
 def validate_phone(phone):
     for num in phone:
-        if num not in "+ ()0123456789":
+        if num not in "0123456789":
             return False
     return True
 

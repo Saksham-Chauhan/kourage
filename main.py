@@ -29,10 +29,10 @@ bot = commands.Bot(command_prefix="~")          #
 logger = embeds.Logger("kourage-onboarding")    #
                                                 #
 message_ids = {                                 #
-        868871284245803009 : 'rules',           #
-        868871280655499286 : 'client',          #
-        868871141526224928 : 'career',          #
-        868871141526224928 : 'partner'          #
+        868910012955770980 : 'rules',           #
+        868910019884773437 : 'client',          #
+        868910016827105330 : 'career',          #
+        868910023676407818 : 'partner'          #
         }                                       #
                                                 #
 admin_id = 511138541724631050                   #

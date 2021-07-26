@@ -8,8 +8,8 @@ bot = commands.Bot(command_prefix="~")
 #####################################
 ###         EDITABLES           #####
 #####################################
-channel_ids = []
-rules_channel = None
+channel_ids = [868909086803132466, 868908609591975967, 868909118147166229]
+rules_channel = 866578020713103360
 
 async def init_rules(channel):
     embed=discord.Embed(title="**Welcome Aboard!**",
