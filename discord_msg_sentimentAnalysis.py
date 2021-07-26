@@ -81,7 +81,9 @@ class MyBot(commands.Bot):
         df = data1.groupby(['author','compound']).size().unstack(fill_value=0)
         df1 = df.iloc[:, 0:].apply(lambda x: x.div(x.sum()).mul(100), axis=1).astype(int)
         df1.plot(kind='bar')
-        plt.xticks(range(df1.shape[0]),df1['author'],rotation=90)
+        plt.xticks(range(df1.shape[0]),df1['author'],rotation=90,fontsize =3)
+        plt.xlabel("Names")
+        plt.ylabel("Percentage")
         plt.tight_layout()
         plt.savefig('summer-intern.png')
         return
