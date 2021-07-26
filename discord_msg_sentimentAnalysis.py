@@ -10,7 +10,7 @@ intents.members = True
 intents.guilds = True
 class MyBot(commands.Bot):
 
-    channels = [862219851850317845]
+    channels = [ 676375821379829771, 745152122106150932, 848837318244565013, 778608361896935424, 753586853160026143, 859063596331827200 ]
 
     def __init__(self, command_prefix, self_bot, intent):
         commands.Bot.__init__(self, command_prefix=command_prefix, self_bot=self_bot)
@@ -36,8 +36,9 @@ class MyBot(commands.Bot):
                 if(Flag == False):
                     file_location = "summer_intern.csv"   
                     data.to_csv(file_location, index=False)
-                self.sentimentAnalysis()          
-            await channel.send(file=discord.File('summer-intern.png'))
+                self.sentimentAnalysis()        
+                channel_send = self.get_channel(869127234361897010)   #graph is to be shared in the particular channel
+            await channel_send.send(file=discord.File('summer-intern.png'))
 
     async def sentimentAnalysis(self):
         import nltk
