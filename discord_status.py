@@ -45,10 +45,10 @@ async def on_ready():
 
 koders_members = []
 
-@tasks.loop(seconds=30)
+@tasks.loop(hours=24)
 async def load_dictionary_koders():
     global koders_members
-    channel = await bot.fetch_channel(850274428717236244)
+    channel = await bot.fetch_channel(868036722326388736)
     guild = channel.guild
     logger.info('~load_dictionary_koders called for guild ' + str(guild.id) + '/' + guild.name + " : " + str(channel.id) + "/" + channel.name)
     global data
@@ -59,24 +59,20 @@ async def load_dictionary_koders():
         for member in koders_members:
             #data[member.name]['total_time'] += ((datetime.datetime.now()) - data[member.name]['start_time'])
             if member.status == discord.Status.online:
-
                 data[member.name]['total_time'] += (datetime.datetime.now()-data[member.name]['start_time'])
                 data[member.name]['start_time'] = datetime.timedelta(0)
             #print("{}   {}"for)
         for x in ids:
             if type(data[x]['total_time']) == datetime.datetime:
                 totaltime.append(int(data[x]['total_time'].second))
-                
             else:
                 totaltime.append(int(data[x]['total_time'].total_seconds()))
-                #print(totaltime)
         plt.bar(ids, totaltime)
         plt.xticks(range(len(ids)), ids, rotation=90, fontsize=3)
         plt.xlabel('Names')
         plt.ylabel('Total online time(hrs)')
         plt.title('Online status')
         plt.tight_layout()
-        #plt.show()
         plt.savefig('temp.png')
         plt.clf()
         await channel.send(file=discord.File('temp.png'))   #, delete_after = 43200
@@ -112,7 +108,5 @@ async def on_member_update(usr_before, usr_after):
 
 try:
     bot.run(os.environ.get('TOKEN'))
-    #bot.run('ODY2NjA2OTE5OTYyOTg0NDg4.YPVAlg.VMcjBONgkcYnAlH6GtVjqQYgGQw')
 except Exception as err:
-    #pass
     logger.error("Error in main worker.\n" + err)
