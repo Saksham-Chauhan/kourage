@@ -31,8 +31,8 @@ bot = commands.Bot(command_prefix="~",          #
 logger = embeds.Logger("kourage-profile")       #
 embeds.logger = logger                          #
                                                 #
-message_id =                  #
-ticket_channel_id =           #
+message_id = 874543919357124668                 #
+ticket_channel_id = 870538319807803422          #
 ticket_channel = None                           #
 #################################################
 #       LIST FOR MAINTAINING ORDER              #
@@ -50,6 +50,8 @@ def environ_check(var):
     if not var in os.environ:
         raise Exception("'" + var + "' not found in the environ list.")
 
+# TODO
+# Edit sqlite.
 @bot.event
 async def on_ready():
     global ticket_channel
