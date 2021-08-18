@@ -32,8 +32,8 @@
           "TYPE":"email"
         },
         "DOB":{
-          "CONTENT":"Please tell me your D.O.B.",
-          "TYPE":"None"
+          "CONTENT":"Please tell me your D.O.B.\n\nValid Format:- dd/mm/yyyy or dd-mm-yyyy",
+          "TYPE":"date"
         },
         "PROJECTS":{
           "CONTENT":"Please tell me your past projects.",
@@ -41,7 +41,7 @@
         },
         "REDMINE":{
           "CONTENT":"Please tell me your Redmine API Key.",
-          "TYPE":"None"
+          "TYPE":"api"
         }
       }
     }

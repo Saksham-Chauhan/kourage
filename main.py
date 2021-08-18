@@ -31,8 +31,8 @@ bot = commands.Bot(command_prefix="~",          #
 logger = embeds.Logger("kourage-profile")       #
 embeds.logger = logger                          #
                                                 #
-message_id =                  #
-ticket_channel_id =           #
+message_id = 874543919357124668                 #
+ticket_channel_id = 870538319807803422          #
 ticket_channel = None                           #
 #################################################
 #       LIST FOR MAINTAINING ORDER              #
@@ -236,6 +236,8 @@ async def print_profile(ctx, user_id, _dict, cur, timeout = 60, isTextChannel = 
     j = 0
     send_dict = dict()
     for i in _dict[table_name]:
+        if i.lower() == 'redmine':
+            continue
         send_dict[i] = row[j]
         j+=1
     user = await bot.fetch_user(user_id)
@@ -275,6 +277,7 @@ async def __profile(ctx, user, timeout = 60, isTextChannel = False):
     logger.success('~__profile executed successfully.')
 
 @bot.command()
+@commands.has_any_role("Koders")
 async def profile(ctx, *, user_mentions):
     logger.info('~profile called.')
     try:
@@ -283,10 +286,17 @@ async def profile(ctx, *, user_mentions):
         user_list = user_mentions.split()
         users = set()
 
+        is_kore = 'kore' in [i.name.lower() for i in ctx.author.roles]
+
         for user in user_list:
             users.add(await bot.fetch_user(int(user[3 : -1])))
 
         for user in users:
+            if user.id != ctx.author.id:
+                if not is_kore:
+                    await embeds.error_title_embed(ctx, "Unauthorized Access", 'Not authorized to access details of ' + user.mention + '!')
+                    logger.error('Unauthorized Access by ' + ctx.author.name + ' for ' + str(user.id) + '/' + user.name + '.')
+                    continue
             await __profile(ctx, user)
 
         await welcome_embed.delete()

@@ -186,25 +186,32 @@ def validate_phone(phone):
     return True
 
 def validate_email(email):
-    regex = "^[a-z0-9]+[\\._]?[a-z0-9]+[@]\\w+[.]\\w{2,3}$"
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     if re.search(regex, email):
         return True
     else:
         return False
-        
+
+def validate_date(_date):
+    regex = r'^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[13-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$'
+    if re.search(regex, _date):
+        return True
+    else:
+        return False
+
 # TODO; redmine api format regex here.
 def validate_api(api):
     return True
 
 async def ctx_input(ctx, bot, embed, timeout = 60.0, user = None, type = None):
-    types = [None, "None", "name", "phone", "email", "api"]
+    types = [None, "None", "date", "name", "phone", "email", "api"]
     try:
         if type not in types:
             await embed.delete()
             err_embed = error_embed("", "Some technical issue occured.\nIf you are an admin please look into the log files.")
             await ctx.send(embed = err_embed, delete_after = timeout)
             logger.error("Invalid token type '" + type + "' given for ctx input.")
-            return
+            raise asyncio.TimeoutError
         if type and type != "None":
             cmd = ("validate_" + type + "(\'{msg}\')", "True") [not type]
         if user is None:
@@ -225,9 +232,6 @@ async def ctx_input(ctx, bot, embed, timeout = 60.0, user = None, type = None):
                     await msg.delete()
                     raise Exception("Invalid token '" + _id + "' for type '" + type + "'.")
             await msg.delete()
-            if(type == "api"):
-                _id = base64.b64encode(_id.encode("ascii"))
-                return _id
             return _id
 
     except asyncio.TimeoutError as err:
