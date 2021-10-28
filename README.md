@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://koders.in/">
-    <img src="logo.png" alt="Logo" width="200" height="200">
+    <img src="./logo.png" alt="Logo" width="200" height="200">
   </a>
 </p>
 <p align="center">
@@ -22,7 +22,8 @@
 </p>
 
 # Introduction
-This is the offical repo of discord bot of Koders.
+
+This is the official repo of discord bot of Koders.
 
 [![Generic badge](https://img.shields.io/static/v1?label=Language&message=python&color=yellow)](https://shields.io/)
  [![Support Server](https://img.shields.io/discord/591914197219016707.svg?color=7289da&label=Koders&logo=discord&style=flat-square)](https://discord.gg/hGS24JC)
@@ -35,14 +36,12 @@ This is the offical repo of discord bot of Koders.
 ## Table of content
 
 - [Details](#project-details)
-- [Changelog](#changelog)
+<!-- - [Changelog](#changelog) will be added later on-->
 - [Code of conduct](#code-of-conduct)
 - [Usage](#usage)
 - [Commands](#commands)
 - [Issues](#issues)
 - [Copyright and license](#copyright-and-license)
-
-
 
 ## Project Details
 
@@ -50,11 +49,9 @@ This is the offical repo of discord bot of Koders.
 - Title - Integrity (Kourage now) 
 - Started on - 09/04/2020
 
-
-
 ## Code of conduct
 
-- **Pitch in!**, and offer what help you can, as there is never enough time to do everything. If you noticed that something is lacking in the documentation, you're probably right, so do generate as much issues as possible.
+- **Pitch in!**, and offer what help you can, as there is never enough time to do everything. If you noticed that something is lacking in the documentation, you're probably right, so do generate as many issues as possible.
 - Assume good intentions. English is the language of the team except for some situations, but, it is not every user's native language. Try to avoid too much slang, abbreviations, or idiomatic expressions.
 - Keep it civil, courteous and polite. No personal attacks. 
 - Don't waste people's time by generating unimportant issues.
@@ -68,13 +65,9 @@ This is the offical repo of discord bot of Koders.
 Will be added later (Check dev branch)
 ```
 
-
-
 ## Usage
 
 Use prefix `&` before using any commands.
-
-
 
 ### Commands
 <i> Under process, check dev branch for more </i>
@@ -86,8 +79,7 @@ Have a bug or a feature request? Please first read the code of conduct and searc
 
 ## Copyright and license
 
-Code and documentation copyright 2017-2020 by the [koders](https://www.koders.in). Code released under the [MIT License](https://en.wikipedia.org/wiki/MIT_License).
-
+Code and documentation copyright 2017-2021 by the [Koders](https://www.koders.in). Code released under the [MIT License](https://en.wikipedia.org/wiki/MIT_License).
 <h3 align="center"> Made with ♡ by <a href="http://koders.in"> Koders </a></h3>
 
 
