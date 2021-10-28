@@ -16,8 +16,8 @@ def send_webhook(webhook, embed, resp=None):
     headers["Content-Type"] = "application/json"
 
     data = json.dumps({
-        'content': '',
-        })
+        'embed': embed
+    })
 
     try:
         resp = requests.post(webhook, headers=headers, data=data)

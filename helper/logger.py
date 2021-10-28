@@ -8,7 +8,7 @@ init()
 
 
 class Logger:
-    def __init__(self, app: object) -> object:
+    def __init__(self, app: object) -> None:
         """
         Creates logging class for colored logs in the terminal
         :rtype: object
