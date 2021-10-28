@@ -1,9 +1,7 @@
 from discord.ext import commands
-from process.quotes.main import *
 from helper.jobs import *
 import asyncio
 import schedule
-import os
 
 client = commands.Bot(command_prefix='.')
 
