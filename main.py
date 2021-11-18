@@ -11,7 +11,7 @@ intents = discord.Intents.all()
 intents.members = True
 client = commands.Bot(command_prefix='.', intents=intents)
 
-# TODO -> Hourly -> Tech meme
+# TODO -> Hourly -> Tech meme -> Priority
 # TODO -> Daily -> Presence, Sentiments, Opened tickets, Spent time
 # TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
 # TODO -> Friday -> Meeting reminder, Chart spent time
