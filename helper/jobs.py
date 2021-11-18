@@ -8,6 +8,12 @@ def weekday_job(job, t=None):
         schedule.every().day.at(t).do(job)
 
 
+def friday_job(job, t=None):
+    week = datetime.today().weekday()
+    if t is not None and week == 5:  # 0 - monday to 6 - sunday
+        schedule.every().day.at(t).do(job)
+
+
 def daily_job(job, t=None):
     if t is not None:
         schedule.every().day.at(t).do(job)

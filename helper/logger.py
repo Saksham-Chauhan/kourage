@@ -16,13 +16,16 @@ class Logger:
         self.app = app
 
     def info(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'yellow'))
+        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'blue'))
 
     def warning(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'green'))
+        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'yellow'))
 
     def error(self, message):
         print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'red'))
+
+    def success(self, message):
+        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'green'))
 
     def custom_color(self, message, color):
         print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', color))
