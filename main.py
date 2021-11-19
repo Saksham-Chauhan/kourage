@@ -3,6 +3,7 @@ from helper.jobs import *
 from process.quotes.main import *
 from process.presence.main import update_presence_timer, daily_presence_job
 from process.sentiment.main import daily_sentiment_job
+from process.spent_time.main import daily_spent_job
 from helper.logger import Logger
 from dotenv import load_dotenv, find_dotenv
 import asyncio
@@ -40,6 +41,7 @@ def init_schedules():
     friday_job(job_friday_meeting, '16:00')
     daily_job(daily_presence_job, '21:00')
     daily_job(daily_sentiment_job, '21:10')
+    daily_job(daily_spent_job(), '23:30')
 
 
 async def run_schedules():

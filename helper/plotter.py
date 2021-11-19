@@ -24,3 +24,16 @@ def plot_sentiment_graph(data, score, analysis):
     plt.savefig('sentiment_data.png')
     plt.clf()
     return
+
+
+def plot_spent_graph(data):
+    plt.bar(data.keys(), data.values(), color=['darkcyan'], width=0.3)
+    plt.xticks(rotation=90)
+    plt.title("Spent time graph of today")
+    plt.ylabel('Hours')
+    plt.xlabel("Name")
+
+    plt.tight_layout()
+    plt.savefig('spent_time_data.png', dpi=100)
+    plt.close()
+
