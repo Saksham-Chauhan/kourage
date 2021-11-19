@@ -1,7 +1,8 @@
 from discord.ext import commands
 from helper.jobs import *
 from process.quotes.main import *
-from process.presence.main import update_timer, daily_presence_job
+from process.presence.main import update_presence_timer, daily_presence_job
+from process.sentiment.main import daily_sentiment_job
 from helper.logger import Logger
 from dotenv import load_dotenv, find_dotenv
 import asyncio
@@ -30,7 +31,7 @@ async def on_ready():
 async def on_member_update(usr_before, usr_after):
     logger.info('Status: ' + usr_before.name + '/' + str(usr_before.status))  # logging only for removing project errors
     logger.info('Status: ' + usr_after.name + '/' + str(usr_after.status))
-    await update_timer(usr_after.name, usr_after.status)
+    await update_presence_timer(usr_after.name, usr_after.status)
 
 
 def init_schedules():
@@ -38,6 +39,7 @@ def init_schedules():
     weekday_job(job_evening_work_log, '19:00')
     friday_job(job_friday_meeting, '16:00')
     daily_job(daily_presence_job, '21:00')
+    daily_job(daily_sentiment_job, '21:10')
 
 
 async def run_schedules():
