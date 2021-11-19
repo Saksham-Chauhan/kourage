@@ -2,7 +2,7 @@ import discord
 import datetime
 from helper import logger, plotter
 from helper.webhook import send_webhook
-from process.presence.embeds import get_graph_embed
+from process.presence.embeds import get_presence_graph_embed
 
 data = dict()  # GLOBAL DATA
 logger = logger.Logger("kourage-presence")
@@ -36,8 +36,8 @@ async def update_timer(member, status):
 
 async def daily_presence_job(guild):
     global data
-    plotter.plot_graph(data)
+    plotter.plot_presence_graph(data)
     webhook_url = ""
-    send_webhook(webhook_url, get_graph_embed)
+    send_webhook(webhook_url, get_presence_graph_embed)
     data = load_members(guild)
     await reset_timer()
