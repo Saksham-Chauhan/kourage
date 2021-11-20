@@ -3,7 +3,7 @@ from helper.logger import Logger
 import json
 import requests
 
-logger = Logger('Kourage')
+logger = Logger()
 
 
 def send_webhook(webhook, embed, resp=None):

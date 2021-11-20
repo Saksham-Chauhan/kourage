@@ -3,19 +3,20 @@ from datetime import datetime
 from helper.logger import Logger
 from helper.plotter import plot_spent_graph
 from helper.webhook import send_webhook
+from helper.redmine import RedmineConfigKey
 from process.spent_time.embed import get_sentiment_graph_embed
 from dotenv import load_dotenv, find_dotenv
 import os
-from redminelib import Redmine
 
 
-logger = Logger('kourage-spent_time')
+logger = Logger()
 load_dotenv(find_dotenv())
 
 
 async def spent_time():
-    redmine = Redmine('https://kore.koders.in', key=os.environ.get('REDMINE_KEY'))
-    today = datetime.now().weekday()
+    redmine = RedmineConfigKey().initialize()
+
+    today = datetime.now()
     time_entries = redmine.time_entry.filter(from_date=today)
 
     data, message = dict(), str()
@@ -30,9 +31,7 @@ async def spent_time():
             message += (str(entry["user"]["name"]) + " " + "(Issue#" + str(entry["issue"]["id"]) + ")" + ' - ' + str(float(entry['hours'])) + ' hour(s)')
         except ResourceAttrError:
             message += (str(entry["user"]["name"]) + ' - ' + str(float(entry['hours'])) + ' hour(s)' + "** PLEASE "
-                                                                                                       "ALLOCATE "
-                                                                                                       "ISSUE ID **")
-
+                                                                                                       "ALLOCATE ")
         return data, message
 
 

@@ -14,13 +14,13 @@ intents.members = True
 client = commands.Bot(command_prefix='.', intents=intents)
 
 # TODO -> Hourly -> Tech meme -> Priority
-# TODO -> Daily -> Presence, Sentiments, Opened tickets, Spent time
+# TODO -> Daily -> Opened tickets
 # TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
 # TODO -> Friday -> Meeting reminder, Chart spent time
 # TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
 #  Issues (Opened/Closed) + Gantt chart
 
-logger = Logger('kourage')
+logger = Logger()
 
 
 @client.event

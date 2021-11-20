@@ -5,7 +5,7 @@ from helper.webhook import send_webhook
 from process.presence.embeds import get_presence_graph_embed
 
 data = dict()  # GLOBAL DATA
-logger = logger.Logger("kourage-presence")
+logger = logger.Logger()
 
 
 async def load_members(guild):

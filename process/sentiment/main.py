@@ -9,7 +9,7 @@ import datetime
 import os
 import re
 
-logger = Logger("kourage-presence")
+logger = Logger()
 
 
 def create_date_time_object():
