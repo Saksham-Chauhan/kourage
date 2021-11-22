@@ -16,9 +16,7 @@ intents.members = True
 client = commands.Bot(command_prefix='.', intents=intents)
 
 # TODO -> Hourly -> Tech meme -> Priority
-# TODO -> Daily -> Opened tickets
 # TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
-# TODO -> Friday -> Meeting reminder, Chart spent time
 # TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
 #  Issues (Opened/Closed) + Gantt chart
 
@@ -44,6 +42,7 @@ def init_schedules():
     daily_job(daily_presence_job, '21:00')
     daily_job(daily_sentiment_job, '21:10')
     daily_job(daily_spent_job(), '23:30')
+    friday_job(daily_spent_job(), '18:00')
 
 
 async def run_schedules():
