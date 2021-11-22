@@ -3,19 +3,18 @@ from datetime import datetime
 from helper.logger import Logger
 from process.spent_time.embed import get_spent_graph_embed
 from helper.webhook import send_webhook
-from helper.redmine import RedmineConfigKey
+from helper.redmine import RedmineConfig
 from helper.plotter import plot_spent_graph
 from dotenv import load_dotenv, find_dotenv
 import os
 
-from redminelib import Redmine
 
 logger = Logger()
 load_dotenv(find_dotenv())
 
 
 async def spent_time():
-    redmine = RedmineConfigKey().initialize()
+    redmine = RedmineConfig().initialize()
 
     today = datetime.now()
     time_entries = redmine.time_entry.filter(from_date=today)
