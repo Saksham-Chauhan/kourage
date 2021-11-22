@@ -1,13 +1,15 @@
 import os
 from redminelib import Redmine
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())
 
 
 class RedmineConfig:
-    def __init__(self, url=None, key=None, username=None, password=None):
-        self.url = url
-        self.key = key
-        self.username = username
-        self.password = password
+    def __init__(self):
+        self.url = 'https://kore.koders.in'
+        self.key = os.environ.get('REDMINE_KEY')
+        self.username = os.environ.get('REDMINE_USERNAME')
+        self.password = os.environ.get('REDMINE_PASSWORD')
 
     def initialize(self):
         if self.username and self.password is not None:
@@ -17,19 +19,3 @@ class RedmineConfig:
         else:
             return False
         return redmine
-
-
-class RedmineConfigKey(RedmineConfig):
-    def __init__(self):
-        super().__init__()
-        self.url = 'https://kore.koders.in'
-        self.key = os.environ.get('REDMINE_KEY')
-
-
-class RedmineConfigUsernamePassword(RedmineConfig):
-    def __init__(self):
-        super().__init__()
-        self.url = 'https://kore.koders.in'
-        self.username = os.environ.get('REDMINE_USERNAME')
-        self.password = os.environ.get('REDMINE_PASSWORD')
-        RedmineConfig(self.url, None, self.username, self.password).initialize()
