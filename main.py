@@ -1,194 +1,65 @@
-import asyncio
-import datetime
-import json
-import csv
-import os
-from uuid import uuid4
-from sqlite3.dbapi2 import Cursor
-import sqlite3
-import logging
-import platform
-import time
-import os
-
-import discord
-import requests
-from colorama import init
-from discord.utils import get
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
-from discord.ext.tasks import loop
-from termcolor import colored
-import embeds
 
-machine = platform.node()
-init()
+from helper.jobs import *
+from process.quotes.main import *
+from process.presence.main import update_presence_timer, daily_presence_job
+from process.sentiment.main import daily_sentiment_job
+from process.spent_time.main import daily_spent_job
+from process.subreddit.main import reddit_tech_meme
+from helper.logger import Logger
+from dotenv import load_dotenv, find_dotenv
+import asyncio
+import schedule
 
-logger = embeds.Logger("kourage-suggestions")
+intents = discord.Intents.all()
+intents.members = True
+client = commands.Bot(command_prefix='.', intents=intents)
 
-# FOR PRODUCTION
-bot = commands.Bot(command_prefix="~")
+# TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
+# TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
+#  Issues (Opened/Closed) + Gantt chart
 
-@bot.event
-async def on_ready():  # Triggers when bot is ready
-    db = sqlite3.connect('main.sqlite')
-    cursor = db.cursor()
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS suggestions(
-        Title TEXT,
-        Description TEXT,
-        UniqueId TEXT,
-        Status TEXT,
-        DiscordId TEXT,
-        User TEXT,
-        Remark TEXT
-        )
-    ''')
+logger = Logger()
 
-    db.commit()
-    print("bot is ready!")
 
-    logger.success("Kourage is running at version {0}".format("0.1.0"))
+@client.event
+async def on_ready():
+    print("Welcome to Kourage...")
 
-@bot.event
-async def on_raw_reaction_add(payload):
-    message_id = payload.message_id
-    if message_id == int(os.environ.get("REACTION_MESSAGE_ID")):
-        await suggestion(payload)
 
-# Suggestion function
-async def suggestion(ctx):
-    cursor = sqlite3.connect('main.sqlite')
-    emojis = ['✅','❌'] 
-    
-    admin_embed = embeds.simple_embed(ctx,title="Suggestion Bot", description="To accept the suggestion: ✅"
-    "To decline the suggestion: ❌")
-    admin_embed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    admin_embed.set_author(name = f'suggested by {ctx.member}', icon_url = f'{ctx.member.avatar_url}')
-    discordId = str(ctx.member.id)
-    user = str(ctx.member.name)
+@client.event
+async def on_member_update(usr_before, usr_after):
+    logger.info('Status: ' + usr_before.name + '/' + str(usr_before.status))  # logging only for removing project errors
+    logger.info('Status: ' + usr_after.name + '/' + str(usr_after.status))
+    await update_presence_timer(usr_after.name, usr_after.status)
 
-    # Title
-    title_embed = embeds.simple_embed(ctx,
-        title = 'Please tell me the title of the Suggestion',
-        description = ' This request will timeout after a minute'
-    )
-    sent = await bot.get_channel(ctx.channel_id).send(embed = title_embed)
-    titlemessage = embeds.ctx_input(ctx, bot, sent)
-    if not titlemessage:
-        logger.error("Title message timeout")
-        return
-    logger.info("Title message"+titlemessage)
-        
-    # description
-    description_embed = embeds.simple_embed(ctx,
-        title = 'Please tell me the Description of the Suggestion',
-        description = ' This request will timeout after 5 minutes'
-    )
-    sent2 = await bot.get_channel(ctx.channel_id).send(embed = description_embed)
-    descriptionmessage = embeds.ctx_input(ctx, bot, sent2, timeout = 300.0)
-    if not descriptionmessage:
-        logger.error("Description message timeout")
-        return
-    logger.info("Description message"+descriptionmessage)
-        
-    # Unique ID
-    event_id = datetime.datetime.now().strftime('%Y%m-%d%H-%M%S-') + str(uuid4())
-    unique_id = event_id[48:].upper()
-    
-    admin_embed.add_field(name='Ticket ID: ', value = f'{unique_id}', inline=False)    
-    admin_embed.add_field(name = 'Title', value  = f'{titlemessage}',inline = False)
-    admin_embed.add_field(name = 'Description', value  = f'{descriptionmessage}',inline = False)
 
-    channel = bot.get_channel(int(os.environ.get("ADMIN_CHANNEL_ID")))
-    message = await channel.send(embed = admin_embed)
-    await message.add_reaction('✅')
-    await message.add_reaction('❌')
-    
-    sendEmbed = embeds.simple_embed(ctx, "", "")
-    sendEmbed.add_field(name = 'Title', value  = f'{titlemessage}')
-    sendEmbed.add_field(name = 'Description', value  = f'{descriptionmessage}')
-    sendEmbed.add_field(name='Ticket ID: ', value = f'{unique_id}', inline=False) 
-    sendEmbed.set_author(name = f'suggested by {ctx.member}', icon_url = f'{ctx.member.avatar_url}')
-    sendEmbed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
-    
-    def check (reaction, user):
-        return not user.bot and message == reaction.message
-    
-    try:
-        reaction, user = await bot.wait_for('reaction_add',check=check,timeout=604800) 
+def init_schedules():
+    weekday_job(job_morning_quote, '11:00')
+    weekday_job(job_evening_work_log, '19:00')
+    friday_job(job_friday_meeting, '16:00')
+    daily_job(daily_presence_job, '21:00')
+    daily_job(daily_sentiment_job, '21:10')
+    daily_job(daily_spent_job(), '23:30')
+    friday_job(daily_spent_job(), '18:00')
+    hourly_job(reddit_tech_meme())
 
-        # Role logic for displaying the maximum authority over roles
-        roles = []
-        for role in user.roles:
-            if(role.name == '@everyone'):
-                continue
-            else:
-                roles.append(role)
-        
-        while reaction.message == message:
-            if str(reaction.emoji) == "✅":
-                await message.delete()
-                
-                # Remarks Embed
-                remarks_embed = embeds.simple_embed(ctx,
-                    title = 'Any remarks to be added? ',
-                    description = ' This request will timeout after 5 minutes'
-                )
-                
-                remarks = await channel.send(embed = remarks_embed)
-                remarksmessage = embeds.ctx_input(ctx, bot, remarks, timeout = 300.0)
-                if not remarksmessage:
-                    logger.error("Remarks message timeout")
-                    return
-                logger.info("Remarks message"+remarksmessage)
 
-                sendEmbed.add_field(name='Approved by:  ', value = f'{user}', inline=False)
-                sendEmbed.add_field(name='Remarks: ',value = f'{remarksmessage}',inline=False)
-                approved_channel = bot.get_channel(int(os.environ.get("SUGGESTION_APPROVED_CHANNEL_ID")))
-                await approved_channel.send(embed = sendEmbed)
-                status = "Approved"
+async def run_schedules():
+    while True:
+        schedule.run_pending()
+        await asyncio.sleep(60)
 
-                cursor.execute('''INSERT INTO suggestions
-                (Title, Description, UniqueId, Status, DiscordId, User, Remark) VALUES (?, ?, ?, ?, ?, ?, ?)''', (titlemessage, descriptionmessage, unique_id, status, str(discordId), str(user), remarksmessage))
-                cursor.commit()
-                cursor.close()
-                
-                return
 
-            elif str(reaction.emoji) == "❌":
-                await message.delete()
-                remarks_embed = embeds.simple_embed(ctx,
-                    title = 'Any remarks to be added? ',
-                    description = ' This request will timeout after 5 minutes'
-                )
-                remarks = await channel.send(embed = remarks_embed)
-                remarksmessage = embeds.ctx_input(ctx, bot, remarks, timeout = 300.0)
-                if not remarksmessage:
-                    logger.error("Remarks message timeout")
-                    return
-                logger.info("Remarks message"+remarksmessage)
-
-                sendEmbed.add_field(name='Disapproved by:  ', value = f'{user}', inline=False)
-                sendEmbed.add_field(name='Remarks: ',value = f'{remarksmessage}',inline=False) 
-                disapproved_channel = bot.get_channel(int(os.environ.get("SUGGESTION_DISAPPROVED_CHANNEL_ID")))
-                await disapproved_channel.send(embed = sendEmbed)
-                status = "Disapproved"
-
-                cursor.execute('''INSERT INTO suggestions
-                (Title, Description, UniqueId, Status, DiscordId, User, Remark) VALUES (?, ?, ?, ?, ?, ?, ?)''', (titlemessage, descriptionmessage, unique_id, status, str(discordId), str(user), remarksmessage))
-                cursor.commit()
-                cursor.close()
-            
-                return
-    except asyncio.TimeoutError:
-        await bot.get_channel(ctx.channel_id).send("Your suggestion was timed out. Please try again!")
-        return
-
+# Main driver
 if __name__ == "__main__":
     try:
-        bot.run(os.environ.get("TOKEN"))
+        load_dotenv(find_dotenv())
+        init_schedules()
+        client.loop.create_task(run_schedules())
+        client.run(os.environ.get('TOKEN'))
     except CommandNotFound:
-        pass # For handling command not found errors
+        pass  # For handling command not found errors
     except Exception as _e:
-        logging.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
+        logger.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
