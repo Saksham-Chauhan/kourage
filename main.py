@@ -1,4 +1,6 @@
 from discord.ext import commands
+from discord.ext.commands import CommandNotFound
+
 from helper.jobs import *
 from process.quotes.main import *
 from process.presence.main import update_presence_timer, daily_presence_job
@@ -51,7 +53,13 @@ async def run_schedules():
 
 
 # Main driver
-load_dotenv(find_dotenv())
-init_schedules()
-client.loop.create_task(run_schedules())
-client.run(os.environ.get('TOKEN'))
+if __name__ == "__main__":
+    try:
+        load_dotenv(find_dotenv())
+        init_schedules()
+        client.loop.create_task(run_schedules())
+        client.run(os.environ.get('TOKEN'))
+    except CommandNotFound:
+        pass  # For handling command not found errors
+    except Exception as _e:
+        logger.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
