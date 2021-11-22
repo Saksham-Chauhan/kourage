@@ -1,6 +1,11 @@
 from datetime import datetime
 import schedule
 
+def monthly_job(job, t=None):
+    date = datetime.today().day
+    if t is not None and date == 1:
+        schedule.every().day.at(t).do(job)
+
 
 def weekday_job(job, t=None):
     week = datetime.today().weekday()
@@ -19,7 +24,5 @@ def daily_job(job, t=None):
         schedule.every().day.at(t).do(job)
 
 
-def monthly_job(job, t=None):
-    date = datetime.today().day
-    if t is not None and date == 1:
-        schedule.every().day.at(t).do(job)
+def hourly_job(job):
+    schedule.every().hour.do(job)

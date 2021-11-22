@@ -6,6 +6,7 @@ from process.quotes.main import *
 from process.presence.main import update_presence_timer, daily_presence_job
 from process.sentiment.main import daily_sentiment_job
 from process.spent_time.main import daily_spent_job
+from process.subreddit.main import reddit_tech_meme
 from helper.logger import Logger
 from dotenv import load_dotenv, find_dotenv
 import asyncio
@@ -15,7 +16,6 @@ intents = discord.Intents.all()
 intents.members = True
 client = commands.Bot(command_prefix='.', intents=intents)
 
-# TODO -> Hourly -> Tech meme -> Priority
 # TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
 # TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
 #  Issues (Opened/Closed) + Gantt chart
@@ -43,6 +43,8 @@ def init_schedules():
     daily_job(daily_sentiment_job, '21:10')
     daily_job(daily_spent_job(), '23:30')
     friday_job(daily_spent_job(), '18:00')
+    hourly_job(reddit_tech_meme())
+
 
 
 async def run_schedules():
