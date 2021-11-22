@@ -28,7 +28,7 @@ async def spent_time():
             data[entry['user']['name']] += float(entry['hours'])
 
         try:  # For making the message
-            message += (str(entry["user"]["name"]) + " " + "(Issue#" + str(entry["issue"]["id"]) + ")" + ' - ' + str(float(entry['hours'])) + ' hour(s)')
+            message += (str(entry["user"]["name"]) + " " + "(Issue#" + str(entry["issue"]["id"]) + ")" + ' - ' + str(entry['issue']['subject']) + " - " + str(float(entry['hours'])) + ' hour(s)')
         except ResourceAttrError:
             message += (str(entry["user"]["name"]) + ' - ' + str(float(entry['hours'])) + ' hour(s)' + "** PLEASE "
                                                                                                        "ALLOCATE ISSUE ID ")

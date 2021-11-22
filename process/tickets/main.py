@@ -2,8 +2,6 @@ from helper.redmine import RedmineConfig
 from redminelib.exceptions import ResourceAttrError
 
 
-# TODO => Show opened issues
-# TODO => Show resolved issues
 # TODO => Add issue name along with id in spent time
 
 
@@ -27,4 +25,3 @@ def prepare_embed_message(issues):
         except ResourceAttrError:
             message += issue['id'] + " - " + issues['subject'] + " - " + "_Please assign this_"
     return message
-
