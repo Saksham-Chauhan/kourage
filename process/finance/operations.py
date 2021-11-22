@@ -1,4 +1,4 @@
-git merge masterfrom helper.redmine import RedmineConfig
+from helper.redmine import RedmineConfig
 
 redmine = RedmineConfig().initialize()
 
