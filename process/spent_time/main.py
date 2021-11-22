@@ -1,13 +1,14 @@
 from redminelib.exceptions import ResourceAttrError
 from datetime import datetime
 from helper.logger import Logger
-from helper.plotter import plot_spent_graph
+from process.spent_time.embed import get_spent_graph_embed
 from helper.webhook import send_webhook
 from helper.redmine import RedmineConfigKey
-from process.spent_time.embed import get_sentiment_graph_embed
+from helper.plotter import plot_spent_graph
 from dotenv import load_dotenv, find_dotenv
 import os
 
+from redminelib import Redmine
 
 logger = Logger()
 load_dotenv(find_dotenv())
@@ -31,13 +32,16 @@ async def spent_time():
             message += (str(entry["user"]["name"]) + " " + "(Issue#" + str(entry["issue"]["id"]) + ")" + ' - ' + str(float(entry['hours'])) + ' hour(s)')
         except ResourceAttrError:
             message += (str(entry["user"]["name"]) + ' - ' + str(float(entry['hours'])) + ' hour(s)' + "** PLEASE "
-                                                                                                       "ALLOCATE ")
+                                                                                                       "ALLOCATE ISSUE ID ")
+            message += '\n'
+
         return data, message
 
 
 async def daily_spent_job():
     data, message = await spent_time()
     plot_spent_graph(data)
-    embed = get_sentiment_graph_embed(message)
+    embed = get_spent_graph_embed(data)
     webhook_url = os.environ.get('SPENT_WEBHOOK_URL')
     send_webhook(webhook_url, embed)
+    send_webhook(webhook_url, message)
