@@ -1,27 +1,14 @@
-from helper.redmine import RedmineConfig
-from redminelib.exceptions import ResourceAttrError
+import os
+
+from process.tickets.ticket import *
+from helper.webhook import send_webhook
+
+webhook_url = os.environ.get('TICKET_URL_WEBHOOK')
 
 
-# TODO => Add issue name along with id in spent time
+def ticket_status():
+    send_webhook(webhook_url, prepare_embed_message(get_open_issues()))
+    send_webhook(webhook_url, prepare_embed_message(get_resolved_issues()))
 
 
-def get_open_issues():
-    redmine = RedmineConfig().initialize()
-    issues = redmine.issue.filter(status='open')
-    return issues
 
-
-def get_resolved_issues():
-    redmine = RedmineConfig().initialize()
-    issues = redmine.issue.filter(status='resolved')
-    return issues
-
-
-def prepare_embed_message(issues):
-    message = str()
-    for issue in issues:
-        try:
-            message += issue['id'] + " - " + issues['subject'] + " - " + issues['assigned_to']
-        except ResourceAttrError:
-            message += issue['id'] + " - " + issues['subject'] + " - " + "_Please assign this_"
-    return message
