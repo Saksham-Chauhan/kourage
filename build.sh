@@ -28,6 +28,7 @@ run_cmd() {
 docker --version >/dev/null 2>&1
 docker_ok=$?
 
+
 [[ "$docker_ok" -eq 127 ]] && \
 	printf "[${BOLD}${FAIL}ERROR${NC}] ${FAIL}Docker Not found!!!${NC}${NT}" && \
 	exit 2
@@ -40,6 +41,7 @@ git_ok=$?
 	printf "[${BOLD}${FAIL}ERROR${NC}] ${FAIL}Git Not found!!!${NC}${NT}" && \
 	exit 2
 
+
 # -Directory check
 git_branch=`git branch 2>/dev/null | grep '^*' | colrm 1 2 | tr -d '\n' && echo  -n`
 
@@ -48,4 +50,4 @@ git_branch=`git branch 2>/dev/null | grep '^*' | colrm 1 2 | tr -d '\n' && echo 
 	exit 2
 
 run_cmd "docker build -t ${git_branch} ." "Docker file built."
-run_cmd "docker run -e TOKEN ${git_branch}" "Run"
+run_cmd "docker run -e TOKEN -e ADMIN_CHANNEL_ID ${git_branch}" "Run"
