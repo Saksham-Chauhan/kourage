@@ -46,7 +46,6 @@ def init_schedules():
     hourly_job(reddit_tech_meme())
 
 
-
 async def run_schedules():
     while True:
         schedule.run_pending()
