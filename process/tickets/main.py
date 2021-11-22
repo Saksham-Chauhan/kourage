@@ -11,3 +11,13 @@ def get_open_issues():
 
     issues = redmine.issue.filter(status='open')
     return issues
+
+
+def get_resolved_issues():
+    redmine = RedmineConfig().initialize()
+
+    issues = redmine.issue.filter(status='resolved')
+    return issues
+
+
+
