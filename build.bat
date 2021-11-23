@@ -1,6 +1,6 @@
 
-set TOKEN=ODQ5NTY2Mzk1NjM3MTcwMTc2.YLdCXA.Jq-76rr3NpcSZcDfzGMfy13Bl2o
-set ADMIN_CHANNEL_ID=849583285645475850
+set TOKEN=*****
+set ADMIN_CHANNEL_ID=*******
 
 @echo off
 git.exe %*
