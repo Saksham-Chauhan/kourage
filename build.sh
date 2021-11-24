@@ -61,6 +61,7 @@ run_cmd "docker run -e TOKEN -e REDMINE_KEY -v kourage_data:/usr/src/app/db -e T
 	exit 2
 
 run_cmd "docker build -t ${git_branch} ." "Docker file built."
+run_cmd "docker run -v kourage_data:/usr/src/app/db -e TOKEN  -e CAREER_TICKET_CHANNEL_ID -e PARTNER_TICKET_CHANNEL_ID -e CLIENT_TICKET_CHANNEL_ID -e ADMIN_CHANNEL_ID -e DISCORD_KEY${git_branch}" "Run"
 run_cmd "docker run -e TOKEN ${git_branch}" "Run"
 run_cmd "docker run -v kourage_data:/usr/src/app/db -e GUILD_ID -e TOKEN -e REDMINE_KEY ${git_branch}" "Run"
 run_cmd "docker build -t ${git_branch} ." "Docker file built."
