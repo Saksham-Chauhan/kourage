@@ -2,6 +2,7 @@
 
 set TOKEN=*****
 
+
 @echo off
 git.exe %*
 set GITBRANCH=
@@ -17,4 +18,6 @@ docker build -t %GITBRANCH% .
 if errorlevel 1 echo Unsuccessful built
 
 docker run -e TOKEN=%TOKEN% %GITBRANCH%
+docker run -e TOKEN=%TOKEN%  %GITBRANCH%
+docker run -e TOKEN=%TOKEN% -e ADMIN_CHANNEL_ID=%ADMIN_CHANNEL_ID% %GITBRANCH%
 if errorlevel 1 echo Failed at running the container

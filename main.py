@@ -10,6 +10,7 @@ import json
 import glob
 import discord
 import datetime
+
 import asyncio
 from uuid import uuid4
 from sqlite3.dbapi2 import Cursor
@@ -129,6 +130,59 @@ async def on_raw_reaction_add(ctx):
         logger.error("'on_react': " + str(err))
         return
     logger.success("on_raw_reaction_add executed successfully.")
+import datetime
+import json
+import os
+# Logging format
+import logging
+import platform
+import time
+import sqlite3
+import sys
+import traceback
+from sqlite3.dbapi2 import Cursor
+from discord import channel, message
+from discord.enums import MessageType
+import embed as embed
+from discord.utils import get
+import discord
+import requests
+from colorama import init
+from discord.ext import commands
+from discord.ext.commands import CommandNotFound
+
+from helper.jobs import *
+from process.quotes.main import *
+from process.presence.main import update_presence_timer, daily_presence_job
+from process.sentiment.main import daily_sentiment_job
+from process.spent_time.main import daily_spent_job
+from process.subreddit.main import reddit_tech_meme
+from helper.logger import Logger
+from dotenv import load_dotenv, find_dotenv
+import asyncio
+import schedule
+import embed as EMBEDS
+import embed
+
+intents = discord.Intents.all()
+logger = embed.Logger("kourage-attendance")
+
+
+intents = discord.Intents.default()
+intents.members = True
+client = commands.Bot(command_prefix='.', intents=intents)
+
+# TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
+# TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
+#  Issues (Opened/Closed) + Gantt chart
+
+logger = Logger()
+
+
+@client.event
+async def on_ready():
+    print("Welcome to Kourage...")
+
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -144,6 +198,12 @@ async def on_command_error(ctx, error):
     elif isinstance(error, commands.CheckFailure):
         await ctx.send("*You do not have the permissions to do this.* ", delete_after = 60)
     logger.error(error)
+@client.event
+async def on_member_update(usr_before, usr_after):
+    logger.info('Status: ' + usr_before.name + '/' + str(usr_before.status))  # logging only for removing project errors
+    logger.info('Status: ' + usr_after.name + '/' + str(usr_after.status))
+    await update_presence_timer(usr_after.name, usr_after.status)
+
 
 # TODO
 # Validation for Redmine API Key ------
@@ -273,8 +333,257 @@ async def __profile(ctx, user, timeout = 60, isTextChannel = False):
     except Exception as err:
         logger.error('SQLite: ' + str(err))
         return
+def init_schedules():
+    weekday_job(job_morning_quote, '11:00')
+    weekday_job(job_evening_work_log, '19:00')
+    friday_job(job_friday_meeting, '16:00')
+    daily_job(daily_presence_job, '21:00')
+    daily_job(daily_sentiment_job, '21:10')
+    daily_job(daily_spent_job(), '23:30')
+    friday_job(daily_spent_job(), '18:00')
+    hourly_job(reddit_tech_meme())
+
+# FOR PRODUCTION
+bot = commands.Bot(command_prefix="~", intents=intents)
+
+# TODO
+# Remove sumyak1 and test.py
+
+async def member_loader():
+    member_list = []
+    guild = bot.get_guild(534406455709663233) # Koders's guild id 534406455709663233
+    role = discord.utils.get(guild.roles, name="Koders")
+    for member in guild.members:
+        if role in member.roles:
+            member_list.append(member.id)
+    return member_list
+
+@bot.event
+async def on_ready():  # triggers when bot is ready
+    db = sqlite3.connect('db/ATTENDANCE.sqlite')
+    cursor = db.cursor()
+    try:
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Attendance_table(
+            DATE TEXT,
+            SHIFT TEXT,
+            PRESENTEES TEXT,
+            ABSENTEES TEXT
+            )
+        ''')
+        db.commit()
+        logger.warning("checking integrity of attendance db")
+
+    except Exception as err:
+        logger.error("exception caught at creating attendance db action: " + err.__class__ + " " + str(err))
+        return
+
+@bot.event
+async def on_command_error(ctx, error):
+    ctx.message.delete()
+    if isinstance(error, commands.NoPrivateMessage):
+        await ctx.send("*Private messages.* ", delete_after=60)
+    elif isinstance(error, commands.MissingAnyRole):
+        await ctx.send("*~Not have enough permission.*", delete_after=60)
+    elif isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send("*Command is missing an argument:* ", delete_after=60)
+    elif isinstance(error, commands.DisabledCommand):
+        await ctx.send("*This command is currenlty disabled. Please try again later.* ", delete_after=60)
+    elif isinstance(error, commands.CheckFailure):
+        await ctx.send("*You do not have the permissions to do this.* ", delete_after=60)
+    elif isinstance(error, commands.CommandNotFound):
+        await ctx.send("*This command is not listed in my dictionary.*", delete_after=60)
+    logger.error(error)
+
+# helper functions
+def check(reaction, user):
+    return str(reaction.emoji) == '⬆️' and user.bot is not True
+async def take_reaction(msg, shift_status, timeout=1200.0, presentees=[]):
+    shift_status=shift_status
+    start = time.time()
+    try:
+        result = await bot.wait_for('reaction_add', check=check, timeout=timeout)
+    except asyncio.TimeoutError:
+        await msg.delete()
+
+        # TODO
+        # CTX for absent showing on attendance channel
+        ctx = bot.get_channel(int(os.environ.get("CHANNEL_ID"))) # Channel id goes here
+        logger.info(ctx)
+        # Database entry
+        today=datetime.date.today()
+        date=str(today.strftime("%Y-%m-%d"))
+        presentees = set(presentees)
+        if not presentees:
+            presentees.add("No Presentees.")
+        members = set(await member_loader())
+        absentees = members - presentees
+
+        conn = sqlite3.connect('db/ATTENDANCE.sqlite')
+        cur = conn.cursor()
+        try:
+            cur.execute('''INSERT INTO Attendance_table(DATE, SHIFT, PRESENTEES, ABSENTEES) VALUES (?, ?, ?, ?)''', (date,shift_status,str(presentees).replace("'",""),str(absentees).replace("'","")))
+            conn.commit()
+            logger.warning("Attendance added to db. \nPresentees - " + str(presentees)  + "\nAbsentees - "+str(absentees))
+            embed=await show_absentees(date, shift_status, absentees)
+            await ctx.send(embed=embed, delete_after=120)
+            logger.info("absentees shown")
+        except Exception as err:
+            logger.error(str(err.__class__) + " " + str(err))
+
+    else:
+        reaction, user = result
+        channel = await user.create_dm()
+
+        date_time = datetime.datetime.now()
+        embed = EMBEDS.attendance_dm(date_time.strftime("%D"), date_time.strftime("%H:%M:%S"), date_time.strftime("%A"))
+        await channel.send(embed=embed)
+
+        end = time.time()
+        timeout = timeout - (end - start)
+        logger.info(str(user.id) + '/' + user.name + ' reacted to attendance.')
+
+        presentees.append(user.id)
+        await take_reaction(msg, shift_status=shift_status, timeout=timeout, presentees=presentees)
+
+#@bot.command()
+async def take_attendance(channel, start_time, end_time):
+    logger.info("function take attendance called")
+    if(type(start_time)==datetime.datetime):
+        if start_time.hour>15:
+            shift_status="E"
+        elif start_time.hour<15:
+            shift_status="M"
+        start_time =str(start_time.strftime(r"%I:%M"))
+        end_time = str(end_time.strftime(r"%I:%M"))
+    logger.warning("sending attendance")
+    _embed = embed.attendance(start_time,end_time)
+    msg = await channel.send(embed=_embed)
+    await msg.add_reaction(emoji="⬆️")
+    #msg=bot.get_channel(msg.channel.id)
+
+
+    if start_time == "11:00" and end_time == "11:20":
+        shift_status="M"
+    elif start_time == "15:00" and end_time == "15:20":
+        shift_status="E"
+    else:
+        shift_status=shift_status
+
+    try:
+        await take_reaction(msg, shift_status)
+    except Exception as err:
+        logger.error("exception caught at taking attendance" + str(err))
+        return
+    logger.info("function take attendance executed successfully")
+
+@bot.command()
+@commands.has_any_role("Kore")
+async def manual_fire(ctx):
+    logger.info("function manual fire called by " + str(ctx.author.name))
+
+    start_time = datetime.datetime.now()
+    timestamp = datetime.datetime.now()
+    end_time = timestamp + datetime.timedelta(minutes = 20)
+    channel = bot.get_channel(ctx.channel.id)
+    embed = await take_attendance(channel, start_time, end_time)
+
+    logger.info("function manual fire executed successfully.")
+    await ctx.message.delete()
+async def show_absentees(date, shift_status, absentees):
+    logger.info("function show_absentees called.")
+
+    if shift_status == "M":
+        message = "Morning"
+    elif shift_status == "E":
+        message = "Evening"
+
+    #message=""
+    absentee_list = ""
+    for absentee in absentees:
+        username = await bot.fetch_user(absentee)
+        absentee_list += str(username)+"\n"
+
+    _embed=embed.simple_embed(title="Absent Users on :"+str(date)+"\nShift: "+message,description="")
+    _embed.add_field(name='Users list:', value=absentee_list+"\n\n\n", inline=False)
+    logger.info("List of absentees has been sent to the channel")
+
+    return _embed
+
+@bot.command() #TODO: add kore properties
+async def leaves(ctx, *args):
+    logger.info('~leaves is called by: ' + str(ctx.author.id) + '/' + ctx.author.name)
+    author_role = ctx.author.roles
+    role = ''
+    for i in author_role:
+        if str(i)=="Kore":
+            role=str(i)
+            break;
+        else:
+            role="Koders"
+    if str(role) != "Kore" and args:
+        not_access_embed=discord.Embed(title="Sorry You dont have access to view others leaves!",description="",colour=0x11806a)
+        await ctx.send(embed=not_access_embed,delete_after=60)
+        logger.warning(str(ctx.author.id)+" dont have access")
+        await ctx.message.delete()
+    if check_opening_time.hour < 15:
+        shift_status="M"
+    elif check_opening_time.hour > 15:
+        shift_status="E"
+
+    opening_time=str(timestamp.strftime(r"%I:%M %p"))
+    ending_time=str(delta.strftime(r"%I:%M %p"))
+    embed = EMBEDS.attendance(opening_time, ending_time)
+    msg = await ctx.send(embed=embed)
+    await msg.add_reaction(emoji="⬆️")
+    try:
+        await take_reaction(msg,shift_status)
+    except Exception as err:
+        logger.error("'manual_fire': " + err)
+        return
+
+    start_date, end_date = await embed.data_input(ctx,bot)
+
+    # TODO - set index accordingly to roles only
+    # TODO - koders needs to be changed to Kore
+
+    if not args: #check all attendances
+        users = []
+        if str(role) == "Kore":
+            users=await member_loader()
+            await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 1)
+    today=datetime.date.today()
+    current_date = today.strftime("%Y-%m-%d")
+    leave_Embed=embed.simple_embed(title="Absent Users on :"+str(current_date)+" morning",description="")
+
+    try:
+        cur.execute('''SELECT DISTINCT Users_DB_Attendance.User_ID FROM Users_DB_Attendance WHERE NOT EXISTS (SELECT Attendance_DB.User_ID FROM Attendance_DB WHERE Users_DB_Attendance.User_ID = Attendance_DB.User_ID AND Attendance_DB.Date = ?)''', [current_date])
+    except Exception as err:
+        logger.error(err.__class__ + " " + str(err))
+
+        elif str(role) != "Kore":
+            users.append(str(ctx.author.id))
+            await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 1)
+    else:
+        users = []
+        for arg in args:
+            arg:discord.Member
+            users.append(str(arg.strip("!@<>")))
+
+        await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 1)
+    await ctx.message.delete()
+    morning_absent = cur.fetchall()
+    morning_leave_list=""
+
+    for i in morning_absent:
+        user_id=str(i)
+        bad_chars = ['(', ')', ',', "'"]
+        for i in bad_chars:
+            user_id=user_id.replace(i, '')
 
     logger.success('~__profile executed successfully.')
+        username = await bot.fetch_user(user_id)
+        morning_leave_list=morning_leave_list+str(username)+"\n"
 
 @bot.command()
 @commands.has_any_role("Koders")
@@ -287,9 +596,38 @@ async def profile(ctx, *, user_mentions):
         users = set()
 
         is_kore = 'kore' in [i.name.lower() for i in ctx.author.roles]
+    leave_Embed.add_field(name='Users list:', value = morning_leave_list+"\n\n\n", inline=False)
+    await ctx.send(embed = leave_Embed,delete_after=1200.0)
+    logger.info("'absentees_morning' done successfully.")
+
+#@bot.command()
+async def absentees_evening(ctx):
+    logger.info("'~absentees_evening' called successfully.")
+
+    conn = sqlite3.connect('Attendance_DB.sqlite')
+    cur = conn.cursor()
+
+    today=datetime.date.today()
+    current_date = today.strftime("%Y-%m-%d")
+    leave_Embed=embed.simple_embed(title="Absent Users on :"+str(current_date)+" evening",description="")
+    try:
+        cur.execute('''SELECT DISTINCT Users_DB_Attendance.User_ID FROM Users_DB_Attendance WHERE NOT EXISTS (SELECT Attendance_DB.User_ID FROM Attendance_DB WHERE Users_DB_Attendance.User_ID = Attendance_DB.User_ID AND Attendance_DB.Date = ?)''', [current_date])
+    except Exception as err:
+        logger.error(err.__class__ + " " + str(err))
+
+    morning_absent = cur.fetchall()
+    morning_leave_list=""
+    evening_leave_list=""
+    for i in morning_absent:
+        user_id=str(i)
+        bad_chars = ['(', ')', ',', "'"]
+        for i in bad_chars:
+            user_id=user_id.replace(i, '')
 
         for user in user_list:
             users.add(await bot.fetch_user(int(user[3 : -1])))
+        username = await bot.fetch_user(user_id)
+        morning_leave_list=morning_leave_list+str(username)+"\n"
 
         for user in users:
             if user.id != ctx.author.id:
@@ -316,10 +654,27 @@ async def _update(ctx, user, key):
     try:
         search_dict = base_dict if key_in_base else role_dict
         search_list = base_list if key_in_base else role_list
+    leave_Embed.add_field(name='Users list absent in morning and evening both :', value = morning_leave_list+"\n\n\n", inline=False)
+
+    #evening
+    half_leave_list=[]
+    try:
+        cur.execute('''SELECT DISTINCT Users_DB_Attendance.User_ID FROM Users_DB_Attendance WHERE (SELECT Attendance_DB.User_ID   FROM Attendance_DB WHERE Users_DB_Attendance.User_ID=Attendance_DB.User_ID AND Attendance_DB.Date=? ) ''',[current_date])
+    except Exception as err:
+        logger.error(err.__class__ + " " + str(err))
+
+    half_absent = cur.fetchall()
+
+    for i in half_absent:
+            user_id=str(i)
+            bad_chars = ['(', ')', ',', "'"]
+            for i in bad_chars:
+                user_id=user_id.replace(i, '')
 
         data = list()
         data_dict = dict()
         data_embed_dict = dict()
+            half_leave_list.append(user_id)
 
         list_idx = 0
         idx = -1
@@ -386,9 +741,123 @@ async def update(ctx):
 
     await embeds.send_success_embed(ctx, 'Profile updated successfully.', '')
     logger.success('~updated executed successfully.')
+    for j in half_leave_list:
+            full_day="ME"
+            morning="M"
+            evening="E"
+            try:
+                cur.execute('''SELECT Time FROM Attendance_DB WHERE  Attendance_DB.User_ID= ? AND Attendance_DB.Date=?''',[j,current_date])
+                leave=str(cur.fetchone())
+            except Exception as err:
+                logger.error(err.__class__ + " " + str(err))
+
+            bad_chars = ['(', ')', ',', "'"]
+            for i in bad_chars:
+                leave=leave.replace(i, '')
+
+            if (leave.count(full_day)>0):
+                logger.info("present full day")
+            elif(leave.count(morning)==0):
+                logger.info("present in morning")
+            elif(leave.count(evening)==0):
+                username = await bot.fetch_user(j)
+                evening_leave_list=evening_leave_list+str(username)+"\n"
+
+    leave_Embed.add_field(name='Users list absent in evening :', value = evening_leave_list+"\n\n\n", inline=False)
+    await ctx.send(embed = leave_Embed,delete_after=1200.0)
+    logger.info("'~absentees_evening' done successfully.")
+
+#manual mark specific
+# Attendance Leave Info #TODO: add kore properties
+@bot.command()
+async def attendance(ctx, *args):
+    logger.info('~attendance is called by: ' + str(ctx.author.id) + '/' + ctx.author.name)
+    author_role = ctx.author.roles
+    for i in author_role:
+        if str(i)=="Kore":
+            role=str(i)
+            break;
+        else:
+            role="Koders"
+
+    if str(role) != "Kore" and args:
+    #if str(ctx.author.roles[2]) != "Koders" and args:
+        not_access_embed=discord.Embed(title="Sorry You dont have access to view others attendance!",description="",colour=0x11806a)
+        await ctx.send(embed=not_access_embed,delete_after=60)
+        logger.warning(str(ctx.author.id)+" dont have access")
+        await ctx.message.delete()
+        return
+
+    start_date, end_date = await embed.data_input(ctx,bot)
+
+    # TODO - set index accordingly to roles only
+    # TODO - koders needs to be changed to Kore
+
+    if not args: #check all attendances
+        users = []
+        if str(role) == "Kore":
+            users=await member_loader()
+
+            await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 2)
+        elif str(role) != "Kore":
+            users.append(str(ctx.author.id))
+            await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 2)
+    else:
+        users = []
+        for arg in args:
+            arg:discord.Member
+            users.append(str(arg.strip("!@<>")))
+        await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 2)
+    await ctx.message.delete()
+
+
+
+@bot.command() #FIXME
+async def export_leaves(ctx):
+    logger.info(str(ctx.author.name))
+    author_role = ctx.author.roles
+    role = ''
+    for i in author_role:
+        if str(i)=="Kore":
+            role=str(i)
+            break;
+          logger.info(str(user) + ", "+str(shift_status)+" - attendance marked")
+          channel = await user.create_dm()
+          date_time = datetime.datetime.now()
+          embed = EMBEDS.attendance_dm(date_time.strftime("%D"), date_time.strftime("%H:%M:%S"), date_time.strftime("%A"))
+          embed.add_field(name='Attendance marked for:', value = "Morning shift"+"\n\n\n", inline=False)
+          await channel.send(embed=embed)
+          await ctx.send(embed=embed,delete_after=30)
+
+        else:
+          else_embed=discord.Embed(title="Sorry attendance already marked",description="",colour=0x11806a)
+          end=await ctx.send(embed=else_embed,delete_after=60)
+          logger.warning(str(user.id)+" already marked")
+    elif check_opening_time.hour > 14:
+        else_embed=discord.Embed(title="Sorry time limit reached",description="",colour=0x11806a)
+        end=await ctx.send(embed=else_embed,delete_after=60)
+        logger.warning(str(user.id)+" time limit reached")
+
+
+            role="Koders"
+    if str(role) != "Kore" :
+        not_access_embed=discord.Embed(title="Sorry You dont have access to view others leaves!",description="",colour=0x11806a)
+        await ctx.send(embed=not_access_embed,delete_after=60)
+        logger.warning(str(ctx.author.id)+" dont have access")
+        return
+
+    start_date, end_date = await embed.data_input(ctx,bot)
+    await embed.export_csv(ctx,start_date,end_date)
+    await ctx.message.delete()
+
 
 async def _status(ctx, user):
     roles = {'KORE', 'KODERS', 'KOMMUNITY'}
+#manual mark specific
+@bot.command()
+@commands.has_any_role("Kore")
+async def mark_attendance(ctx):
+    logger.info("Mark attendance function called")
 
     if not roles.intersection({i.name.upper() for i in user.roles}):
         await embeds.error_title_embed(ctx, '', user.mention+ ' is not active any more.')
@@ -402,6 +871,374 @@ async def status(ctx, *, user_mentions):
     try:
         user_list = user_mentions.split()
         guild = ctx.author.guild
+    check_opening_time=datetime.datetime.now()
+    conn = sqlite3.connect('db/ATTENDANCE.sqlite')
+    cur = conn.cursor()
+    today=datetime.date.today()
+    current_date = today.strftime("%Y-%m-%d")
+    print(check_opening_time.hour)
+    #TODO change time in prodcution
+    if check_opening_time.hour < 15 and check_opening_time.hour >=11:
+        shift_status="M"
+    elif check_opening_time.hour < 19 and check_opening_time.hour >= 15:
+        shift_status="E"
+
+    try:
+        cur.execute('''SELECT PRESENTEES,ABSENTEES FROM Attendance_table WHERE DATE = ? AND SHIFT = ?''', [current_date,shift_status])
+        users = (cur.fetchone())
+
+    except Exception as err:
+        logger.error("error fetching detail " + str(err))
+
+    if(str(users)=="None"):
+        logger.error("No content found")
+    elif(str(users[1])=="{No Absentees}"):
+        logger.error("No Absentees found")
+        no_absentees_embed=discord.Embed(title="No Absentees found on Date: "+str(current_date),description="",colour=0x11806a)
+        await ctx.send(embed=no_absentees_embed,delete_after=20)
+    else:
+     presentees=set(users[0][1:-1].split(', '))
+     absentees=set(users[1][1:-1].split(', '))
+     absentees_dict =dict()
+     absentees_string=""
+     idx=1
+
+     for absentee in absentees:
+        absentees_dict[idx]=absentee
+        absentees_string += str(idx)+" - "+ str(await bot.fetch_user(int(absentee))) + "\n"
+        idx +=1
+
+     user_list_embed = EMBEDS.simple_embed('Absentees list for Date: '+current_date, 'Choose the numbers(space seperated) corresponding to the users to mark attendance.' + '\n\n' + absentees_string)
+     sent = await ctx.send(embed = user_list_embed)
+     user_list = await EMBEDS.ctx_input(ctx, bot, sent)
+     if not user_list:
+        logger.error('User list timed out.')
+        await ctx.message.delete()
+        return
+     user_list = list(map(int, user_list.split()))
+     for i in user_list:
+        if i < 1 or i >= idx:
+            logger.error('Invalid index ' + str(i))
+            await ctx.message.delete()
+            return
+
+     for i in user_list:
+        presentees.add((absentees_dict[i]))
+        user=await bot.fetch_user(int(absentees_dict[i]))
+        channel = await user.create_dm()
+        date_time = datetime.datetime.now()
+        embed = EMBEDS.attendance_dm(date_time.strftime("%D"), date_time.strftime("%H:%M:%S"), date_time.strftime("%A"))
+        embed.add_field(name='(M-morning shift , E-evening shift)', value ="Your attendance marked for: "+str(shift_status), inline=False)
+        await channel.send(embed=embed)
+        embed.add_field(name='Username', value =user, inline=False)
+        await ctx.send(embed=embed,delete_after=30)
+
+        absentees.remove(absentees_dict[i])
+        logger.info("dm sent to "+str(user))
+
+     try:
+       if not absentees:
+           absentees.add("No Absentees")
+       cur.execute('''UPDATE Attendance_table SET PRESENTEES = ? , ABSENTEES = ? WHERE DATE = ? AND SHIFT = ?''', [str(presentees).replace("'",""),str(absentees).replace("'",""), current_date,shift_status ])
+       conn.commit()
+       logger.warning("changes made to db")
+     except Exception as err:
+      logger.error(err.__class__ + " " + str(err))
+     await ctx.message.delete()
+          logger.info(str(user) + ", "+str(shift_status)+" - attendance marked")
+          channel = await user.create_dm()
+          date_time = datetime.datetime.now()
+          embed = EMBEDS.attendance_dm(date_time.strftime("%D"), date_time.strftime("%H:%M:%S"), date_time.strftime("%A"))
+          embed.add_field(name='Attendance marked for:', value = "Evening shift"+"\n\n\n", inline=False)
+          await channel.send(embed=embed)
+          await ctx.send(embed=embed,delete_after=30)
+
+        else:
+            if((status.count(full_day)>0)):
+                else_embed=discord.Embed(title="already marked",description="",colour=0x11806a)
+                end=await ctx.send(embed=else_embed,delete_after=60)
+                logger.warning(str(user.id)+" time limit reached")
+            elif((status.count(morning)>0) and (status.count(evening)==0)):
+               status = status + shift_status
+               status = str(status)
+               try:
+                cur.execute('''UPDATE Attendance_DB SET Time = ? WHERE User_ID = ? AND Date = ?''', [status, str(user.id),current_date ])
+                conn.commit()
+               except Exception as err:
+                logger.error(err.__class__ + " " + str(err))
+
+               logger.warning(str(user)+", "+str(shift_status)+" - attendance updated")
+               channel = await user.create_dm()
+               date_time = datetime.datetime.now()
+               embed = EMBEDS.attendance_dm(date_time.strftime("%D"), date_time.strftime("%H:%M:%S"), date_time.strftime("%A"))
+               embed.add_field(name='Attendance marked for:', value = "Evening shift"+"\n\n\n", inline=False)
+               await channel.send(embed=embed)
+               await ctx.send(embed=embed,delete_after=30)
+   elif check_opening_time.hour > 18:
+        else_embed=discord.Embed(title="Sorry time limit reached",description="",colour=0x11806a)
+        end=await ctx.send(embed=else_embed,delete_after=60)
+        logger.warning(str(user.id)+" time limit reached")
+
+# check all user leaves
+@bot.command()
+@commands.has_any_role("@Kore")
+async def check_leaves(ctx):
+    logger.info("Check leaves function called")
+    start_date_embed=discord.Embed(title="Enter start date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+    start=await ctx.send(embed=start_date_embed,delete_after=60)
+    start_date1 = await embed.ctx_input(ctx, bot, start)
+    if not start_date1:
+        return
+
+    end_date_embed=discord.Embed(title="Enter end date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+    end=await ctx.send(embed=end_date_embed,delete_after=60)
+    end_date1 = await embed.ctx_input(ctx, bot, end)
+    if not end_date1:
+        return
+
+
+    start_date = datetime.datetime.strptime(start_date1, '%Y-%m-%d')
+    end_date = datetime.datetime.strptime(end_date1, '%Y-%m-%d')
+
+    conn = sqlite3.connect('Attendance_DB.sqlite')
+    cur = conn.cursor()
+
+
+
+    def daterange(start_date, end_date):
+        for n in range(int((end_date - start_date).days)):
+            yield start_date + timedelta(n)
+
+    leave_Embed=embed.simple_embed(title="Absent Users\n",description="")
+
+
+    for single_date in daterange(start_date, end_date):
+        dates=str(single_date.strftime("%Y-%m-%d"))
+        full_leave_list=""
+        full_leave_list=full_leave_list+"\n𝗗𝗔𝗧𝗘: "+dates+"\n\n"
+
+        morning_leave_list=""
+        morning_leave_list=morning_leave_list+"\n𝗗𝗔𝗧𝗘: "+dates+"\n\n"
+
+        evening_leave_list=""
+        evening_leave_list=evening_leave_list+"\n𝗗𝗔𝗧𝗘: "+dates+"\n\n"
+
+
+
+        #full leave
+        try:
+            cur.execute('''SELECT DISTINCT Users_DB_Attendance.User_ID FROM Users_DB_Attendance WHERE NOT EXISTS (SELECT Attendance_DB.User_ID FROM Attendance_DB WHERE Users_DB_Attendance.User_ID = Attendance_DB.User_ID AND Attendance_DB.Date = ?)''', [dates])
+            full_absent = cur.fetchall()
+        except Exception as err:
+            logger.error(err.__class__ + " " + str(err))
+
+
+        for i in full_absent:
+            user_id=str(i)
+            bad_chars = ['(', ')', ',', "'"]
+            for i in bad_chars:
+                user_id=user_id.replace(i, '')
+
+            username = await bot.fetch_user(user_id)
+            full_leave_list=full_leave_list+str(username)+"\n"
+
+        leave_Embed.add_field(name='Users absent full day:', value = full_leave_list+"\n\n\n", inline=False)
+
+
+        #half leave
+        half_leave_list=[]
+        try:
+            cur.execute('''SELECT DISTINCT Users_DB_Attendance.User_ID FROM Users_DB_Attendance WHERE (SELECT Attendance_DB.User_ID   FROM Attendance_DB WHERE Users_DB_Attendance.User_ID=Attendance_DB.User_ID AND Attendance_DB.Date=? ) ''',[dates])
+            half_absent = cur.fetchall()
+        except Exception as err:
+            logger.error(err.__class__ + " " + str(err))
+
+
+        for i in half_absent:
+            user_id=str(i)
+            bad_chars = ['(', ')', ',', "'"]
+            for i in bad_chars:
+                user_id=user_id.replace(i, '')
+
+            half_leave_list.append(user_id)
+
+        for j in half_leave_list:
+            full_day="ME"
+            morning="M"
+            evening="E"
+            try:
+                cur.execute('''SELECT Time FROM Attendance_DB WHERE  Attendance_DB.User_ID= ? AND Attendance_DB.Date=?''',[j,dates])
+                leave=str(cur.fetchone())
+            except Exception as err:
+                logger.error(err.__class__ + " " + str(err))
+
+            bad_chars = ['(', ')', ',', "'"]
+            for i in bad_chars:
+                leave=leave.replace(i, '')
+
+            if (leave.count(full_day)>0):
+                logger.info("present full day")
+            elif(leave.count(morning)==0):
+                username = await bot.fetch_user(j)
+                morning_leave_list=morning_leave_list+str(username)+"\n"
+            elif(leave.count(evening)==0):
+                username = await bot.fetch_user(j)
+                evening_leave_list=evening_leave_list+str(username)+"\n"
+
+        leave_Embed.add_field(name='User absent in 1st half(Morning):', value = morning_leave_list+"\n\n\n", inline=False)
+        leave_Embed.add_field(name='User absent in 2nd half(Evening):', value = evening_leave_list+"\n\n\n", inline=False)
+
+    await ctx.send(embed=leave_Embed,delete_after=90)
+    logger.warning("full leaves sent")
+
+#Specific user leave
+@bot.command()
+async def specific_leaves(ctx, *,user: discord.Member):
+    logger.info("specific leaves function called")
+    user_author = ctx.author.id
+    check_user = user.id
+    check_username=ctx.author.name
+    author_role = ctx.author.roles
+    #print(author_role)
+
+    if user_author == check_user:
+        start_date_embed=discord.Embed(title="Enter start date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+        start=await ctx.send(embed=start_date_embed,delete_after=60)
+        start_date1 = await embed.ctx_input(ctx, bot, start)
+        if not start_date1:
+            logger.error("'start_date' timed out.")
+            return
+
+        end_date_embed=discord.Embed(title="Enter end date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+        end=await ctx.send(embed=end_date_embed,delete_after=60)
+        end_date1 = await embed.ctx_input(ctx, bot, end)
+        if not end_date1:
+            logger.error("'end_date' timed out.")
+            return
+
+        start_date = datetime.datetime.strptime(start_date1, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date1, '%Y-%m-%d')
+        leaves=embed.show_leaves(start_date,end_date,check_user,check_username)
+        await ctx.send(embed=leaves, delete_after = 90)
+        logger.warning(str(check_username)+" leaves shown")
+
+    if user_author != check_user:
+        role=""
+        for i in author_role:
+            if str(i)=="kore":
+                role=str(i)
+                break;
+            else:
+                role="not admin"
+
+        if role=="kore":
+
+            start_date_embed=discord.Embed(title="Enter start date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+            start=await ctx.send(embed=start_date_embed,delete_after=60)
+            start_date1 = await embed.ctx_input(ctx, bot, start)
+            if not start_date1:
+                logger.error("'start_date1' timed out.")
+                return
+
+            end_date_embed=discord.Embed(title="Enter end date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+            end=await ctx.send(embed=end_date_embed,delete_after=60)
+            end_date1 = await embed.ctx_input(ctx, bot, end)
+            if not end_date1:
+                logger.error("'end_date1' timed out.")
+                return
+
+            start_date = datetime.datetime.strptime(start_date1, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end_date1, '%Y-%m-%d')
+            leaves=embed.show_leaves(start_date,end_date,check_user,check_username)
+            await ctx.send(embed=leaves, delete_after = 90)
+            logger.warning(str(check_username)+" leaves shown")
+
+        else:
+            end_date_embed=discord.Embed(title="Sorry You dont have access to view others leaves!",description="",colour=0x11806a)
+            end=await ctx.send(embed=end_date_embed,delete_after=60)
+            logger.warning(str(user_author)+" dont have access")
+
+
+# Attendance Leave Info
+@bot.command()
+async def check_attendance(ctx, *,user: discord.Member):
+    logger.info("check attendance called")
+    user_author = ctx.author.id
+    check_user = user.id
+    check_username=ctx.author.name
+    author_role = ctx.author.roles
+    #print(author_role)
+
+    if user_author == check_user:
+        start_date_embed=discord.Embed(title="Enter start date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+        start=await ctx.send(embed=start_date_embed,delete_after=60)
+        start_date1 = await embed.ctx_input(ctx, bot, start)
+        if not start_date1:
+            logger.error("'start_date1' timed out.")
+            return
+
+        end_date_embed=discord.Embed(title="Enter end date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+        end=await ctx.send(embed=end_date_embed,delete_after=60)
+        end_date1 = await embed.ctx_input(ctx, bot, end)
+        if not end_date1:
+            logger.error("'end_date1' timed out.")
+            return
+
+        start_date = datetime.datetime.strptime(start_date1, '%Y-%m-%d')
+        end_date = datetime.datetime.strptime(end_date1, '%Y-%m-%d')
+        attendance,save_filename=embed.show_attendance(start_date,end_date,check_user,check_username)
+        await ctx.send(embed=attendance,file=discord.File(save_filename), delete_after = 90)
+        logger.warning(str(check_username)+" Attendace shown")
+
+    if user_author != check_user:
+        role=""
+        for i in author_role:
+            if str(i)=="kore":
+                role=str(i)
+                break;
+            else:
+                role="not admin"
+
+
+        if role=="kore":
+            start_date_embed=discord.Embed(title="Enter start date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+            start=await ctx.send(embed=start_date_embed,delete_after=60)
+            start_date1 = await embed.ctx_input(ctx, bot, start)
+            if not start_date1:
+                logger.error("'start_date1' timed out.")
+                return
+
+            end_date_embed=discord.Embed(title="Enter end date",description="Please enter in this format only 'yyyy-mm-dd'",colour=0x11806a)
+            end=await ctx.send(embed=end_date_embed,delete_after=60)
+            end_date1 = await embed.ctx_input(ctx, bot, end)
+            if not end_date1:
+                logger.error("'end_date1' timed out.")
+                return
+
+            start_date = datetime.datetime.strptime(start_date1, '%Y-%m-%d')
+            end_date = datetime.datetime.strptime(end_date1, '%Y-%m-%d')
+            attendance=embed.show_attendance(start_date,end_date,check_user,check_username)
+            await ctx.send(embed=attendance, delete_after = 90)
+            logger.warning(str(check_username)+" Attendace shown")
+        else:
+            end_date_embed=discord.Embed(title="Sorry You dont have access to view others attendance!",description="",colour=0x11806a)
+            end=await ctx.send(embed=end_date_embed,delete_after=60)
+            logger.warning(str(user_author)+" dont have access")
+
+@loop(minutes=1)
+async def attendance_task():
+    await bot.wait_until_ready()
+    channel = bot.get_channel(int(os.environ.get('CHANNEL_ID')))  # TODO  - Add koders' channel id
+    working_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    date_time = datetime.datetime.now()
+    for working_day in working_days:
+        if working_day == date_time.strftime("%A") and date_time.strftime("%H:%M") == "11:00":
+            logger.info("Ran morning attendance.")
+            await take_attendance(channel, "11:00", "11:20")
+        if working_day == date_time.strftime("%A") and date_time.strftime("%H:%M") == "15:00":
+            logger.info("Ran post lunch attendance.")
+            await take_attendance(channel, "15:00", "15:20")
+    logger.info("Waiting for tasks...")
 
         user_dict = {i.id : i for i in guild.members}
         users = {user_dict[int(user[3:-1])] for user in user_list}
@@ -412,6 +1249,10 @@ async def status(ctx, *, user_mentions):
         logger.error(err)
         return
     logger.success('~status executed successfully.')
+async def run_schedules():
+    while True:
+        schedule.run_pending()
+        await asyncio.sleep(60)
 
 if __name__ == '__main__':
     try:
@@ -419,3 +1260,22 @@ if __name__ == '__main__':
         bot.run(os.environ.get('TOKEN'))
     except Exception as _err:
         logger.error("Exception found at profile worker.\n" + str(_err))
+    issue_embed=embeds.simple_embed(ctx, title="Issues List:",description=list)
+    message  = await ctx.send(embed = issue_embed,delete_after=60)
+
+# Main driver
+if __name__ == "__main__":
+    try:
+        load_dotenv(find_dotenv())
+        init_schedules()
+        client.loop.create_task(run_schedules())
+        client.run(os.environ.get('TOKEN'))
+    except CommandNotFound:
+        pass  # For handling command not found errors
+        attendance_task.start()
+        bot.run(os.environ.get("TOKEN"))
+
+    except discord.ext.commands.errors.MissingAnyRole as e:
+        logger.warning('~' + e)
+    except Exception as _e:
+        logger.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
