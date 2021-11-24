@@ -20,5 +20,6 @@ def get_json(_url, _hdr):
 def post_data(_url, _hdr, _data):
     try:
         _ret = requests.post(url = _url, data = _data, headers = _hdr)
-    except requests.exceptions.RequestException as err:
+        return _ret
+  except requests.exceptions.RequestException as err:
         raise SystemExit(err)

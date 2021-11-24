@@ -1,4 +1,3 @@
-
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound
 
@@ -52,6 +51,8 @@ async def run_schedules():
         schedule.run_pending()
         await asyncio.sleep(60)
 
+    issue_embed=embeds.simple_embed(ctx, title="Issues List:",description=list)
+    message  = await ctx.send(embed = issue_embed,delete_after=60)
 
 # Main driver
 if __name__ == "__main__":
