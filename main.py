@@ -1,3 +1,4 @@
+
 import asyncio
 import datetime
 import json
@@ -18,22 +19,57 @@ import discord
 import requests
 from colorama import init
 from discord.ext import commands
-from discord.ext.tasks import loop
-from termcolor import colored
-from discord.ext.commands import bot
-from datetime import date, timedelta
-from datetime import date
-machine = platform.node()
-init()
+from discord.ext.commands import CommandNotFound
 
+from helper.jobs import *
+from process.quotes.main import *
+from process.presence.main import update_presence_timer, daily_presence_job
+from process.sentiment.main import daily_sentiment_job
+from process.spent_time.main import daily_spent_job
+from process.subreddit.main import reddit_tech_meme
+from helper.logger import Logger
+from dotenv import load_dotenv, find_dotenv
+import asyncio
+import schedule
 import embed as EMBEDS
 import embed
 
+intents = discord.Intents.all()
 logger = embed.Logger("kourage-attendance")
 
 
 intents = discord.Intents.default()
 intents.members = True
+client = commands.Bot(command_prefix='.', intents=intents)
+
+# TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
+# TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
+#  Issues (Opened/Closed) + Gantt chart
+
+logger = Logger()
+
+
+@client.event
+async def on_ready():
+    print("Welcome to Kourage...")
+
+
+@client.event
+async def on_member_update(usr_before, usr_after):
+    logger.info('Status: ' + usr_before.name + '/' + str(usr_before.status))  # logging only for removing project errors
+    logger.info('Status: ' + usr_after.name + '/' + str(usr_after.status))
+    await update_presence_timer(usr_after.name, usr_after.status)
+
+
+def init_schedules():
+    weekday_job(job_morning_quote, '11:00')
+    weekday_job(job_evening_work_log, '19:00')
+    friday_job(job_friday_meeting, '16:00')
+    daily_job(daily_presence_job, '21:00')
+    daily_job(daily_sentiment_job, '21:10')
+    daily_job(daily_spent_job(), '23:30')
+    friday_job(daily_spent_job(), '18:00')
+    hourly_job(reddit_tech_meme())
 
 # FOR PRODUCTION
 bot = commands.Bot(command_prefix="~", intents=intents)
@@ -282,7 +318,7 @@ async def attendance(ctx, *args):
         await embed.leave_and_attendance(ctx, bot, start_date, end_date, users, 2)
     await ctx.message.delete()
 
-    
+
 
 @bot.command() #FIXME
 async def export_leaves(ctx):
@@ -305,13 +341,13 @@ async def export_leaves(ctx):
     await embed.export_csv(ctx,start_date,end_date)
     await ctx.message.delete()
 
-    
+
 #manual mark specific
 @bot.command()
 @commands.has_any_role("Kore")
 async def mark_attendance(ctx):
     logger.info("Mark attendance function called")
-    
+
     check_opening_time=datetime.datetime.now()
     conn = sqlite3.connect('db/ATTENDANCE.sqlite')
     cur = conn.cursor()
@@ -321,8 +357,8 @@ async def mark_attendance(ctx):
     #TODO change time in prodcution
     if check_opening_time.hour < 15 and check_opening_time.hour >=11:
         shift_status="M"
-    elif check_opening_time.hour < 19 and check_opening_time.hour >= 15: 
-        shift_status="E"     
+    elif check_opening_time.hour < 19 and check_opening_time.hour >= 15:
+        shift_status="E"
 
     try:
         cur.execute('''SELECT PRESENTEES,ABSENTEES FROM Attendance_table WHERE DATE = ? AND SHIFT = ?''', [current_date,shift_status])
@@ -331,24 +367,24 @@ async def mark_attendance(ctx):
     except Exception as err:
         logger.error("error fetching detail " + str(err))
 
-    if(str(users)=="None"): 
+    if(str(users)=="None"):
         logger.error("No content found")
-    elif(str(users[1])=="{No Absentees}"): 
+    elif(str(users[1])=="{No Absentees}"):
         logger.error("No Absentees found")
         no_absentees_embed=discord.Embed(title="No Absentees found on Date: "+str(current_date),description="",colour=0x11806a)
         await ctx.send(embed=no_absentees_embed,delete_after=20)
     else:
      presentees=set(users[0][1:-1].split(', '))
      absentees=set(users[1][1:-1].split(', '))
-     absentees_dict =dict() 
+     absentees_dict =dict()
      absentees_string=""
      idx=1
-     
+
      for absentee in absentees:
         absentees_dict[idx]=absentee
         absentees_string += str(idx)+" - "+ str(await bot.fetch_user(int(absentee))) + "\n"
         idx +=1
-        
+
      user_list_embed = EMBEDS.simple_embed('Absentees list for Date: '+current_date, 'Choose the numbers(space seperated) corresponding to the users to mark attendance.' + '\n\n' + absentees_string)
      sent = await ctx.send(embed = user_list_embed)
      user_list = await EMBEDS.ctx_input(ctx, bot, sent)
@@ -373,20 +409,20 @@ async def mark_attendance(ctx):
         await channel.send(embed=embed)
         embed.add_field(name='Username', value =user, inline=False)
         await ctx.send(embed=embed,delete_after=30)
-        
+
         absentees.remove(absentees_dict[i])
         logger.info("dm sent to "+str(user))
-        
+
      try:
-       if not absentees: 
+       if not absentees:
            absentees.add("No Absentees")
-       cur.execute('''UPDATE Attendance_table SET PRESENTEES = ? , ABSENTEES = ? WHERE DATE = ? AND SHIFT = ?''', [str(presentees).replace("'",""),str(absentees).replace("'",""), current_date,shift_status ]) 
+       cur.execute('''UPDATE Attendance_table SET PRESENTEES = ? , ABSENTEES = ? WHERE DATE = ? AND SHIFT = ?''', [str(presentees).replace("'",""),str(absentees).replace("'",""), current_date,shift_status ])
        conn.commit()
        logger.warning("changes made to db")
      except Exception as err:
       logger.error(err.__class__ + " " + str(err))
      await ctx.message.delete()
-  
+
 
 @loop(minutes=1)
 async def attendance_task():
@@ -403,12 +439,28 @@ async def attendance_task():
             await take_attendance(channel, "15:00", "15:20")
     logger.info("Waiting for tasks...")
 
+
+async def run_schedules():
+    while True:
+        schedule.run_pending()
+        await asyncio.sleep(60)
+
+    issue_embed=embeds.simple_embed(ctx, title="Issues List:",description=list)
+    message  = await ctx.send(embed = issue_embed,delete_after=60)
+
+# Main driver
 if __name__ == "__main__":
     try:
+        load_dotenv(find_dotenv())
+        init_schedules()
+        client.loop.create_task(run_schedules())
+        client.run(os.environ.get('TOKEN'))
+    except CommandNotFound:
+        pass  # For handling command not found errors
         attendance_task.start()
         bot.run(os.environ.get("TOKEN"))
 
     except discord.ext.commands.errors.MissingAnyRole as e:
         logger.warning('~' + e)
     except Exception as _e:
-        logging.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
+        logger.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
