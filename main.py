@@ -1,88 +1,66 @@
-import discord
-import platform
-import logging
-import time
-from colorama import init
-from termcolor import colored
-from discord.ext.commands import bot
+
 from discord.ext import commands
-import os
-machine = platform.node()
-init()
+from discord.ext.commands import CommandNotFound
 
-logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
+from helper.jobs import *
+from process.quotes.main import *
+from process.presence.main import update_presence_timer, daily_presence_job
+from process.sentiment.main import daily_sentiment_job
+from process.spent_time.main import daily_spent_job
+from process.subreddit.main import reddit_tech_meme
+from helper.logger import Logger
+from dotenv import load_dotenv, find_dotenv
+import asyncio
+import schedule
+
+intents = discord.Intents.all()
+intents.members = True
+client = commands.Bot(command_prefix='.', intents=intents)
+
+# TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
+# TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
+#  Issues (Opened/Closed) + Gantt chart
+
+logger = Logger()
 
 
-class Logger:
-    def __init__(self, app):
-        self.app = app
-
-    def info(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'yellow'))
-
-    def warning(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'green'))
-
-    def error(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'red'))
-
-    def color(self, message, color):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', color))
+@client.event
+async def on_ready():
+    print("Welcome to Kourage...")
 
 
-logger = Logger("kourage-boilerplate")
+@client.event
+async def on_member_update(usr_before, usr_after):
+    logger.info('Status: ' + usr_before.name + '/' + str(usr_before.status))  # logging only for removing project errors
+    logger.info('Status: ' + usr_after.name + '/' + str(usr_after.status))
+    await update_presence_timer(usr_after.name, usr_after.status)
 
-# FOR TESTING
-# bot = commands.Bot(command_prefix="!")
 
-# FOR PRODUCTION
-bot = commands.Bot(command_prefix="~")
+def init_schedules():
+    weekday_job(job_morning_quote, '11:00')
+    weekday_job(job_evening_work_log, '19:00')
+    friday_job(job_friday_meeting, '16:00')
+    daily_job(daily_presence_job, '21:00')
+    daily_job(daily_sentiment_job, '21:10')
+    daily_job(daily_spent_job(), '23:30')
+    friday_job(daily_spent_job(), '18:00')
+    hourly_job(reddit_tech_meme())
 
-@bot.event
-async def on_ready():  # Triggers when bot is ready
-    logger.warning("Kourage is running at version {0}".format("0.1.0"))
 
-@bot.command()
-@commands.has_any_role("@everyone")
-async def ff(msg):
-    """
-    This module fast forwards the messages from one channel to another
-    Usage: prefix + `ff` + number_of_message =< 10 + channel_name
-    Return: None
-    """
-    last_n_messages=int(msg.message.content.split(' ')[1])+1
-    max_messages=100
-    if last_n_messages-1 > max_messages:
-        await msg.channel.send(f"maximum masseges limit to be forwarded is {max_messages} you have entered {last_n_messages-1}")
-        return
+async def run_schedules():
+    while True:
+        schedule.run_pending()
+        await asyncio.sleep(60)
 
-    message_details=await msg.channel.history(limit=int(last_n_messages)).flatten() 
-    channel_name=msg.message.content.split(' ')[2]
-    channel_name=channel_name[2:(len(channel_name)-1)]
-    channel=bot.get_channel(int(channel_name))
-    print(message_details[1].id)
-    if channel is not None:
-        loop_itterator=1
-        message_to_be_sent_id=[]
-        message_to_be_forwarded=[]
-        
-           
-        while loop_itterator<last_n_messages:
-            if message_details[loop_itterator].attachments:
-                image=message_details[loop_itterator].attachments[0]
-                await channel.send(image)
-            message_to_be_sent_id.append((message_details[loop_itterator]).id)
-            loop_itterator=loop_itterator+1   
-        for each_id in message_to_be_sent_id:
-                message_to_be_forwarded.append((await msg.fetch_message(each_id)).content)
-        message_to_be_forwarded.reverse()
-        for each in message_to_be_forwarded:
-            await channel.send(each)
-    else:
-        await msg.channel.send('Channel name not found')
 
+# Main driver
 if __name__ == "__main__":
     try:
-        bot.run(os.environ.get("TOKEN"))
+        load_dotenv(find_dotenv())
+        init_schedules()
+        client.loop.create_task(run_schedules())
+        client.run(os.environ.get('TOKEN'))
+    except CommandNotFound:
+        pass  # For handling command not found errors
     except Exception as _e:
-        logging.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
+        logger.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
