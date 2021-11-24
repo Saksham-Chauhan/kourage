@@ -1,17 +1,17 @@
 import asyncio
 import json
 import os
+
+import time
 import logging
 import platform
-import time
+import datetime
 import discord
 from colorama import init
 from termcolor import colored
-import datetime
 
 machine = platform.node()
 init()
-
 logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
 
 class Logger:
@@ -22,6 +22,8 @@ class Logger:
         print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'yellow'))
 
     def success(self, message):
+
+    def warning(self, message):
         print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'green'))
 
     def error(self, message):
@@ -32,7 +34,11 @@ class Logger:
 
 logger = Logger("kourage-work")
 
-def simple_embed(ctx, title, description):
+
+
+logger = Logger("kourage-boilerplate")
+        
+def simple_embed(title, description):
     embed = discord.Embed(
             title = title,
             description = description,
@@ -73,6 +79,18 @@ async def take_reaction(ctx, rxn_amnt, _embed, bot, timeout=300.0):
         await ctx.delete()
 
 
+    
+    return embed
+
+
+
+    embed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
+    embed.set_footer(text="Made with ❤️️  by Koders")
+    embed.timestamp = datetime.datetime.utcnow()
+    return embed
+
+
+                       
 async def ctx_input(ctx, bot, embed, timeout = 60.0):
     try:
         msg = await bot.wait_for(
@@ -87,7 +105,9 @@ async def ctx_input(ctx, bot, embed, timeout = 60.0):
             await msg.delete()
             return _id
 
+    
     except asyncio.TimeoutError as err:
+        logger.error("Cancelling due to timeout")
         await embed.delete()
         await ctx.send('Cancelling due to timeout.', delete_after = timeout)
         return None
