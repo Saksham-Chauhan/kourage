@@ -1,78 +1,66 @@
-import requests
-from datetime import date
-from matplotlib import pyplot as plt
-import numpy as np
+
 from discord.ext import commands
-import discord
-import  os
-import embeds
-from discord.ext.tasks import loop
-hdr1 = {'X-Redmine-API-Key':os.environ.get("REDMINE_KEY")}
-bot = commands.Bot(command_prefix="~")
-logger = embeds.Logger("kourage-Spent-Time")
+from discord.ext.commands import CommandNotFound
 
-#TODO 
-#we can add delete after for embeds
+from helper.jobs import *
+from process.quotes.main import *
+from process.presence.main import update_presence_timer, daily_presence_job
+from process.sentiment.main import daily_sentiment_job
+from process.spent_time.main import daily_spent_job
+from process.subreddit.main import reddit_tech_meme
+from helper.logger import Logger
+from dotenv import load_dotenv, find_dotenv
+import asyncio
+import schedule
 
-@loop(hours=24)
-async def spent_time():
- logger.info("spent_time called")
- await bot.wait_until_ready()
- channel = bot.get_channel(int(877467665084600320))
- #url = "https://www.kore.koders.in/time_entries.json?utf8=%E2%9C%93&set_filter=1&sort=spent_on%3Adesc&f%5B%5D=spent_on&op%5Bspent_on%5D=t&f%5B%5D=&c%5B%5D=project&c%5B%5D=spent_on&c%5B%5D=user&c%5B%5D=activity&c%5B%5D=issue&c%5B%5D=comments&c%5B%5D=hours&group_by=&t%5B%5D=hours&t%5B%5D="
- url="https://www.kore.koders.in/time_entries.json?utf8=%E2%9C%93&set_filter=1&sort=spent_on%3Adesc&f%5B%5D=spent_on&op%5Bspent_on%5D=%3D&v%5Bspent_on%5D%5B%5D=2021-06-15&f%5B%5D=&c%5B%5D=project&c%5B%5D=spent_on&c%5B%5D=user&c%5B%5D=activity&c%5B%5D=issue&c%5B%5D=comments&c%5B%5D=hours&group_by=&t%5B%5D=hours&t%5B%5D="
- payload={}
- headers = hdr1
+intents = discord.Intents.all()
+intents.members = True
+client = commands.Bot(command_prefix='.', intents=intents)
 
- response = requests.request("GET", url, headers=headers, data=payload).json()
- 
- 
- if (response["total_count"])==0: 
-   today_date=date.today()
-   embed=embeds.simple_embed(title="No one logged there data on "+str(today_date),description="")
-   await channel.send(embed=embed)
-   logger.info("no data found")
- 
- else: 
-  today_date=response["time_entries"][0]["spent_on"]
-  time_list=[]
-  data_list=[]
-  
-  for i in response["time_entries"]:
-    keys=list(i.keys())
-    if "issue" not in keys:  
-     data_list.append(str(i["user"]["name"])+" "+"(No issue)")
-     time_list.append(int(i["hours"]))
-    else:  
-     data_list.append(str(i["user"]["name"])+" "+"(Issue#"+str(i["issue"]["id"])+")")
-     time_list.append(int(i["hours"]))
-  
-  
-  value =time_list
-  data = data_list
-  save_filename='test.png'
-  
-  plt.bar(data, value, color = ['darkcyan'], width = 0.4)
-  plt.xticks(rotation = 90)
-  plt.title("Spent time graph of "+str(today_date))
-  plt.ylabel('spent time in hrs')
-  plt.xlabel("Names and issues id")
-  
-  plt.tight_layout()
-  plt.savefig(save_filename,dpi=100)
-  plt.close() 
+# TODO -> Weekdays -> Attendance -> Morning, Post lunch, Quotes
+# TODO -> Monthly -> Finances -> In/Out (Difference) + Graph, Team -> In/Out (Difference) + Graphs,
+#  Issues (Opened/Closed) + Gantt chart
 
-  await channel.send(file=discord.File(save_filename))
-  logger.info("spent time graph shown of "+str(today_date))
+logger = Logger()
 
 
+@client.event
+async def on_ready():
+    print("Welcome to Kourage...")
 
 
+@client.event
+async def on_member_update(usr_before, usr_after):
+    logger.info('Status: ' + usr_before.name + '/' + str(usr_before.status))  # logging only for removing project errors
+    logger.info('Status: ' + usr_after.name + '/' + str(usr_after.status))
+    await update_presence_timer(usr_after.name, usr_after.status)
+
+
+def init_schedules():
+    weekday_job(job_morning_quote, '11:00')
+    weekday_job(job_evening_work_log, '19:00')
+    friday_job(job_friday_meeting, '16:00')
+    daily_job(daily_presence_job, '21:00')
+    daily_job(daily_sentiment_job, '21:10')
+    daily_job(daily_spent_job(), '23:30')
+    friday_job(daily_spent_job(), '18:00')
+    hourly_job(reddit_tech_meme())
+
+
+async def run_schedules():
+    while True:
+        schedule.run_pending()
+        await asyncio.sleep(60)
+
+
+# Main driver
 if __name__ == "__main__":
     try:
-        logger.info("spent time running")
-        spent_time.start()
-        bot.run(os.environ.get("TOKEN"))
-
+        load_dotenv(find_dotenv())
+        init_schedules()
+        client.loop.create_task(run_schedules())
+        client.run(os.environ.get('TOKEN'))
+    except CommandNotFound:
+        pass  # For handling command not found errors
     except Exception as _e:
         logger.warning("Exception found at main worker. Reason: " + str(_e), exc_info=True)
