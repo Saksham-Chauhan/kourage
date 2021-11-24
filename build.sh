@@ -47,5 +47,6 @@ git_branch=`git branch 2>/dev/null | grep '^*' | colrm 1 2 | tr -d '\n' && echo 
 	printf "[${BOLD}${FAIL}ERROR${NC}] ${FAIL}Not a github branch!!!\nPlease clone again and don't remove the '.git' file.${NC}${NT}" && \
 	exit 2
 
+
 run_cmd "docker build -t ${git_branch} ." "Docker file built."
 run_cmd "docker run -e TOKEN -e ADMIN_CHANNEL_ID ${git_branch}" "Run"

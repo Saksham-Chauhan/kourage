@@ -31,6 +31,7 @@ class Logger:
         print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', color))
 
 
+
 logger = Logger("kourage-boilerplate")
         
 def simple_embed(title, description):
@@ -39,6 +40,11 @@ def simple_embed(title, description):
             description = description,
             colour=0x11806a
             )
+    
+    return embed
+
+
+
     embed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
     embed.set_footer(text="Made with ❤️️  by Koders")
     embed.timestamp = datetime.datetime.utcnow()
