@@ -1,16 +1,15 @@
-import requests
 import json
-import os
-import discord
+import requests
 
-# TODO
+
+# TODO => Set this to operations container and paste spent-time container and issue manager in the same container
 # Set things to discord
 
-def show_projects(key): # Redmine api key
+def show_projects(key):  # Redmine api key
     url = "https://kore.koders.in/projects.json"
-    payload={}
+    payload = {}
     headers = {
-      'X-Redmine-API-Key': key
+        'X-Redmine-API-Key': key
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     data = json.loads(response.text)
@@ -20,18 +19,20 @@ def show_projects(key): # Redmine api key
         res += "\n"
     return res
 
-def create_issue(key, project_id, tracker_id, priority_id, subject, description, due_date, estimated_hours, assigned_to):
+
+def create_issue(key, project_id, tracker_id, priority_id, subject, description, due_date, estimated_hours,
+                 assigned_to):
     url = "https://kore.koders.in/issues.json"
-    payload={'issue[project_id]': project_id,
-    'issue[tracker_id]': tracker_id,
-    'issue[priority_id]': priority_id,
-    'issue[subject]': subject,
-    'issue[description]': description,
-    'issue[due_date]': due_date,
-    'issue[assigned_to_id]': assigned_to,
-    'issue[estimated_hours]': estimated_hours}
+    payload = {'issue[project_id]': project_id,
+               'issue[tracker_id]': tracker_id,
+               'issue[priority_id]': priority_id,
+               'issue[subject]': subject,
+               'issue[description]': description,
+               'issue[due_date]': due_date,
+               'issue[assigned_to_id]': assigned_to,
+               'issue[estimated_hours]': estimated_hours}
     headers = {
-      'X-Redmine-API-Key': key,
+        'X-Redmine-API-Key': key,
     }
     response = requests.request("POST", url, headers=headers, data=payload)
     print(response.text)
@@ -42,11 +43,12 @@ def create_issue(key, project_id, tracker_id, priority_id, subject, description,
         print("Unable to get status code")
         return False
 
+
 def show_members(key, project_id):
     url = "https://kore.koders.in/projects/" + str(project_id) + "/memberships.json"
-    payload={}
+    payload = {}
     headers = {
-      'X-Redmine-API-Key': key,
+        'X-Redmine-API-Key': key,
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
@@ -57,25 +59,27 @@ def show_members(key, project_id):
         result += "\n"
     return result
 
-def show_issues(key): # Redmine api key
+
+def show_issues(key):  # Redmine api key
     url = "https://kore.koders.in/issues.json"
-    payload={}
+    payload = {}
     headers = {
-      'X-Redmine-API-Key': key
+        'X-Redmine-API-Key': key
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     data = json.loads(response.text)
     result = ""
     for issue in data['issues']:
-        result += str(issue['id']) + " - " + issue['subject']+ " - "  + issue['project']['name']
+        result += str(issue['id']) + " - " + issue['subject'] + " - " + issue['project']['name']
         result += "\n"
     return result
 
+
 def change_issue_status(key, issue_id, status_id):
     url = "https://kore.koders.in/issues/" + str(issue_id) + ".json"
-    payload={'issue[status_id]': status_id }
+    payload = {'issue[status_id]': status_id}
     headers = {
-      'X-Redmine-API-Key': key,
+        'X-Redmine-API-Key': key,
     }
     response = requests.request("PUT", url, headers=headers, data=payload)
     try:
@@ -86,5 +90,3 @@ def change_issue_status(key, issue_id, status_id):
     except:
         print("Something went wrong")
         return False
-
-print(show_issues(os.environ.get("REDMINE_KEY")))

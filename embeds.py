@@ -1,50 +1,16 @@
+from helper.logger import Logger
+from colorama import init
 import asyncio
 import re
-import json
-import os
-import logging
-import platform
-import time
-import discord
-from colorama import init
-from termcolor import colored
-import datetime
-machine = platform.node()
-init()
-
-import json
-import os
-
-import time
 import logging
 import platform
 import datetime
 import discord
-from colorama import init
-from termcolor import colored
 
 machine = platform.node()
 init()
+
 logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
-
-class Logger:
-    def __init__(self, app):
-        self.app = app
-
-    def info(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'yellow'))
-
-    def success(self, message):
-
-
-    def warning(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'green'))
-
-    def error(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'red'))
-
-    def color(self, message, color):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', color))
 
 logger = None
 
@@ -92,26 +58,25 @@ def success_embed(title, desc):
     embed = discord.Embed(
             title = title,
             description = desc,
-            color = embed_color['success']
-logger = Logger("kourage-work")
+            colour=0x11806a
+    )
+    color = embed_color['success']
+    logger = Logger("kourage-boilerplate")
 
 
 
-
-logger = Logger("kourage-boilerplate")
 def simple_embed(title, description):
     embed = discord.Embed(
             title = title,
             description = description,
             colour=0x28da5b
             )
-            colour=0x11806a
-            )
     embed.set_author(name = f'{ctx.message.author}', icon_url = f'{ctx.author.avatar_url}')
     #embed.thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
     embed.timestamp = datetime.datetime.utcnow()
     embed.set_footer(text="Made with ❤️️  by Koders")
     return embed
+
 
 def error_embed(title, description):
     embed = discord.Embed(

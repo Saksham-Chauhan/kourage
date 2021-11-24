@@ -219,7 +219,7 @@ async def leave_and_attendance(ctx, bot, start_date, end_date, users, mode):
 
 async def export_csv(ctx,start_date,end_date):
     logger.info("export csv called")
-    conn = sqlite3.connect('ATTENDANCE.sqlite')
+    conn = sqlite3.connect('db/ATTENDANCE.sqlite')
     cur = conn.cursor()
 
     cur.execute('''SELECT DATE, SHIFT, ABSENTEES FROM Attendance_table  WHERE DATE BETWEEN ? AND ?''',(start_date, end_date))
@@ -254,7 +254,7 @@ def leave_and_attendance(ctx, bot, start_date, end_date, users, mode):
     """
     logger.info("Show attendance called")
 
-    conn = sqlite3.connect('ATTENDANCE.sqlite')
+    conn = sqlite3.connect('db/ATTENDANCE.sqlite')
     cur = conn.cursor()
     if mode == 1:
         cur.execute('''SELECT DATE, SHIFT, PRESENTEES FROM ATTENDANCE WHERE DATE BETWEEN ? AND ?''', str(start_date), str(end_date))
@@ -348,7 +348,7 @@ def attendance(ctx, bot, start_date, end_date, user_id, mode, flag):
     attendance_list=""
     attendance_list=attendance_list+"\n𝗗𝗔𝗧𝗘: "+dates+"\n"
 
-    conn = sqlite3.connect('ATTENDANCE.sqlite')
+    conn = sqlite3.connect('db/ATTENDANCE.sqlite')
     cur = conn.cursor()
 
     # TODO

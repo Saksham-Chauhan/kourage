@@ -13,13 +13,14 @@ from io import StringIO
 
 import embeds
 
+
 async def _archive(id, admin_channel, bot, logger, singleChannel, discord_key):
-    #while True:
+    # while True:
     if not id:
         raise Exception("ID not defined")
 
     fptr = open(r'stream/dce_stdin', 'w+')
-    data = ('guild: ', 'channel: ') [singleChannel] + str(id) + '\n' + 'token: ' + os.environ.get('DISCORD_KEY')
+    data = ('guild: ', 'channel: ')[singleChannel] + str(id) + '\n' + 'token: ' + os.environ.get('DISCORD_KEY')
     fptr.writelines(data)
     fptr.close()
     while not os.path.exists('stream/o_stdin'):
@@ -30,16 +31,18 @@ async def _archive(id, admin_channel, bot, logger, singleChannel, discord_key):
     files = glob.glob('stream/files/*')
 
     for file in files:
-        await admin_channel.send(file = discord.File(file))
+        await admin_channel.send(file=discord.File(file))
 
     fptr = open(r'stream/dce_stdin', 'w+')
     fptr.write('done')
     fptr.close()
     time.sleep(3)
-    
+
+
 async def __delete(ctx, logger):
     logger.info("~__delete called for " + str(ctx.channel.id))
     try:
         await ctx.channel.delete();
     except Exception as _err:
-        raise Exception("Failed deleting channel " + str(ctx.channel.id) + " " + ctx.channel.name + "\nError:-\n" + _err)
+        raise Exception(
+            "Failed deleting channel " + str(ctx.channel.id) + " " + ctx.channel.name + "\nError:-\n" + _err)

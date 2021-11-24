@@ -1,43 +1,21 @@
-from email.message import EmailMessage
-import random
-import smtplib, ssl 
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-from email.mime.multipart import MIMEMultipart
-import os
-import discord
-import platform
-import asyncio
-from uuid import uuid4
-from colorama import init
-from termcolor import colored
-from discord.ext.commands import bot
-from discord.ext import commands
-import time
 import logging
-import datetime
+import platform
+import smtplib
+from colorama import init
+from discord.ext import commands
+from discord.ext.commands import bot
+import json
+import discord
+
+from discord.ext import commands
+
+import embeds
+import sqlite_cmds as SQLITE
 
 machine = platform.node()
 init()
 
 logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
-
-class Logger:
-    def __init__(self, app):
-        self.app = app
-
-    def info(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'yellow'))
-
-    def success(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'green'))
-
-    def error(self, message):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', 'red'))
-
-    def color(self, message, color):
-        print(colored(f'[{time.asctime(time.localtime())}] [{machine}] [{self.app}] {message}', color))
 
 logger = Logger("kourage-emails")
 bot = commands.Bot(command_prefix="~")
@@ -46,30 +24,10 @@ sender_passwd = None
 
 @bot.event
 async def on_command_error(ctx, error):
+
 #################################
 # FIXME: JSON File input
 ##################################
-import sys
-import subprocess
-import sqlite3
-import requests
-import os
-import json
-import glob
-import discord
-import datetime
-
-import asyncio
-from uuid import uuid4
-from sqlite3.dbapi2 import Cursor
-from discord.ext.tasks import loop
-from discord.ext.commands.errors import CommandNotFound
-from discord.utils import get
-from discord.ext import commands
-
-import embeds
-import sqlite_cmds as SQLITE
-
 #################################################
 #                   GLOBALS                     #
 #################################################
@@ -86,7 +44,7 @@ ticket_channel = None                           #
 #################################################
 #       LIST FOR MAINTAINING ORDER              #
 #################################################
-kontent_file = open('kontent_sheet.json')       #
+kontent_file = open('process/onboarding/kontent_sheet.json')       #
 kontent_json = json.load(kontent_file)          #
                                                 #
 base_list = kontent_json['base_list']           #
@@ -179,25 +137,10 @@ async def on_raw_reaction_add(ctx):
         return
     logger.success("on_raw_reaction_add executed successfully.")
 import datetime
-import json
-import os
 # Logging format
-import logging
-import platform
 import time
 import sqlite3
-import sys
-import traceback
-from sqlite3.dbapi2 import Cursor
-from discord import channel, message
-from discord.enums import MessageType
-import embed as embed
-from discord.utils import get
-import discord
-import requests
-from colorama import init
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound
 
 from helper.jobs import *
 from process.quotes.main import *
@@ -206,7 +149,6 @@ from process.sentiment.main import daily_sentiment_job
 from process.spent_time.main import daily_spent_job
 from process.subreddit.main import reddit_tech_meme
 from helper.logger import Logger
-from dotenv import load_dotenv, find_dotenv
 import asyncio
 import schedule
 import embed as EMBEDS

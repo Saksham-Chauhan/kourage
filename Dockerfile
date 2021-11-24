@@ -1,3 +1,4 @@
+# TODO => Set volumes for passing data -> Resume, Career, Kommunity Data
 FROM python:3
 WORKDIR /usr/src/app
 COPY . .

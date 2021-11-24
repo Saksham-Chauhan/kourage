@@ -11,9 +11,10 @@ bot = commands.Bot(command_prefix="~")
 channel_ids = [868909086803132466, 868908609591975967, 868909118147166229]
 rules_channel = 866578020713103360
 
+
 async def init_rules(channel):
-    embed=discord.Embed(title="**Welcome Aboard!**",
-            description="""HELLO! THANK YOU FOR CHOOSING KODERS.
+    embed = discord.Embed(title="**Welcome Aboard!**",
+                          description="""HELLO! THANK YOU FOR CHOOSING KODERS.
 
             At Koders, we adhere to certain set of **rules**.
             > 
@@ -32,18 +33,20 @@ async def init_rules(channel):
 
             To get started,
             Please react on this message to be a part of our journey!"""
-            , colour=0x11806a)
+                          , colour=0x11806a)
 
-    embed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
+    embed.set_thumbnail(
+        url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
     embed.set_footer(text="Welcome to Koders ❤️️")
-    send = await channel.send(embed = embed)
+    send = await channel.send(embed=embed)
     await send.add_reaction('⬆️')
 
     return
 
+
 async def init_onboarding(channels):
-    embed=discord.Embed(title="Welcome to **KODERS**!",
-            description="""
+    embed = discord.Embed(title="Welcome to **KODERS**!",
+                          description="""
             We're glad to have you on board with us!
             **VISION | KREATE | INSPIRE**
 
@@ -63,14 +66,16 @@ async def init_onboarding(channels):
             > +91 7017799756
 
             """
-            , colour=0x11806a)
+                          , colour=0x11806a)
 
-    embed.set_thumbnail(url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
+    embed.set_thumbnail(
+        url="https://media.discordapp.net/attachments/700257704723087360/819643015470514236/SYM_TEAL.png?width=455&height=447")
     embed.set_footer(text="Welcome to Koders ❤️️")
     for channel in channels:
-        send = await channel.send(embed = embed)
+        send = await channel.send(embed=embed)
         await send.add_reaction('⬆️')
     return
+
 
 @bot.event
 async def on_ready():
@@ -81,5 +86,6 @@ async def on_ready():
         channels.append(bot.get_channel(i))
 
     await init_onboarding(channels)
+
 
 bot.run(os.environ.get("TOKEN"))

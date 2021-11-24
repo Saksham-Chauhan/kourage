@@ -1,3 +1,4 @@
+# TODO => Deprecated. Please remove at the time of production after attaching hasura to this.
 def create_sqlite_cmd(cursor_name, table_name, _dict):
     cmd = cursor_name + ".execute('''INSERT INTO " + table_name + '('
     for i in _dict:
@@ -11,6 +12,7 @@ def create_sqlite_cmd(cursor_name, table_name, _dict):
     cmd = cmd[:-1] + '))'
     return cmd
 
+
 def sqlite_fetch_cmd(cursor_name, _dict, primary_key, primary_key_val):
     table_name = None
     for i in _dict:
@@ -23,10 +25,12 @@ def sqlite_fetch_cmd(cursor_name, _dict, primary_key, primary_key_val):
 
     return table_name, cmd
 
+
 def sqlite_exist_in_table(cursor_name, table_name, primary_key, primary_key_val):
     cmd = cursor_name + ".execute('''SELECT EXISTS(SELECT 1 FROM "
     cmd += table_name + " WHERE " + primary_key + "=?)''', (" + primary_key_val + ",))"
     return cmd
+
 
 def sqlite_delete_row(cursor_name, table_name, primary_key, primary_key_val):
     cmd = cursor_name + ".execute('''DELETE FROM "
