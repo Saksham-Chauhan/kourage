@@ -56,7 +56,7 @@ class Main:
 
 
 
-HTML_File=open('index.html','r')
+HTML_File=open('index.html', 'r')
 s = HTML_File.read().format(p=Main)
 HTML_File.close()
 invoice_html=open("out.html",'w')
