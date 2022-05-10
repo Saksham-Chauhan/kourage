@@ -8,10 +8,11 @@ monitor_channel_id=os.getenv('CHANNELID')
 
 bot = commands.Bot(command_prefix='!')
 
-def send_webhook(url, content):
+def send_webhook(url, username, content):
     import requests #dependency
     data = {
         "content" : content,
+        "username": str(username)
     }
 
     result = requests.post(url, json = data)
@@ -30,7 +31,8 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     if int(message.channel.id) == int(monitor_channel_id):
-        send_webhook(webhook_url, message.content)
+        print(message.author)
+        send_webhook(webhook_url, message.author, message.content)
 
 bot.run(token)
 
