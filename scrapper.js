@@ -88,7 +88,7 @@ async function getLocalPlaceReviews() {
     const browser = await puppeteer.launch({
       headless: true,
       executablePath:
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/usr/bin/google-chrome",
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 

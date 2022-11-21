@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { getReviews } = require("./scrapper");
+const { channelId } = require("./config.json")
 
 const INTERVAL_TIME = 6 * 60 * 60 * 1000;
 let REVIEWS = [];
@@ -24,7 +25,7 @@ const startInterval = async (discordClient) => {
         latestReviewsList.push(reviews[reviews?.length - i - 1]);
       }
       if (latestReviewsList?.length)
-        sendMessage(latestReviewsList, discordClient);
+        sendMessage(latstReviewsList, discordClient);
     }
     setTimeout(startInterval, INTERVAL_TIME);
   } catch (error) {
@@ -39,7 +40,7 @@ const startInterval = async (discordClient) => {
  */
 const sendMessage = async (reviews, discordClient) => {
   if (reviews?.length) {
-    const channel = discordClient.channels.cache.get("989393850667786262");
+    const channel = discordClient.channels.cache.get(channelId);
     reviews?.forEach((element) => {
       if (!element?.snippet) element["snippet"] = "None";
       if (element?.user?.name) {
