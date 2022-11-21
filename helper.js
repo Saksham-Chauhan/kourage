@@ -32,6 +32,11 @@ const startInterval = async (discordClient) => {
   }
 };
 
+/**
+ * This function sends review message to the specified channel
+ * @param {Object} disgordClient Object of discord client.
+ * @param {Array} reviews "Array of reviews."
+ */
 const sendMessage = async (reviews, discordClient) => {
   if (reviews?.length) {
     const channel = discordClient.channels.cache.get("989393850667786262");
@@ -41,7 +46,6 @@ const sendMessage = async (reviews, discordClient) => {
         const reviewEmbed = new EmbedBuilder()
           .setColor(0x0099ff)
           .setURL(element?.user?.thumbnail)
-          //   .setThumbnail(element?.user?.thumbnail)
           .setTitle("⭐".repeat(element?.rating))
           .setAuthor({
             name: element?.user?.name,
