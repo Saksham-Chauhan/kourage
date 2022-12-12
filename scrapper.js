@@ -5,21 +5,26 @@ const placeUrl =
   "https://www.google.com/maps/place/Koders/@30.3307776,77.9591553,17z/data=!3m1!4b1!4m5!3m4!1s0x39092b338ee9e6f1:0x5964dd90fecf95d2!8m2!3d30.3307776!4d77.961344";
 
 async function scrollPage(page, scrollContainer) {
-  let lastHeight = await page.evaluate(
-    `document.querySelector("${scrollContainer}").scrollHeight`
-  );
-  while (true) {
-    await page.evaluate(
-      `document.querySelector("${scrollContainer}").scrollTo(0, document.querySelector("${scrollContainer}").scrollHeight)`
-    );
-    await page.waitForTimeout(4000);
-    let newHeight = await page.evaluate(
+  try {
+    logger.info("scrollPage func running!");
+    let lastHeight = await page.evaluate(
       `document.querySelector("${scrollContainer}").scrollHeight`
     );
-    if (newHeight === lastHeight) {
-      break;
+    while (true) {
+      await page.evaluate(
+        `document.querySelector("${scrollContainer}").scrollTo(0, document.querySelector("${scrollContainer}").scrollHeight)`
+      );
+      await page.waitForTimeout(4000);
+      let newHeight = await page.evaluate(
+        `document.querySelector("${scrollContainer}").scrollHeight`
+      );
+      if (newHeight === lastHeight) {
+        break;
+      }
+      lastHeight = newHeight;
     }
-    lastHeight = newHeight;
+  } catch (error) {
+    logger.error("Error in scrollPage func and error is:", error);
   }
 }
 
@@ -111,7 +116,7 @@ async function getLocalPlaceReviews() {
     await page.setDefaultNavigationTimeout(60000);
     await page.goto(placeUrl);
     await page.waitForSelector(".DUwDvf");
-
+    // Use if wants to get place info
     // const placeInfo = await fillPlaceInfo(page);
     await page.click(".F7nice");
     await page.waitForTimeout(2000);
