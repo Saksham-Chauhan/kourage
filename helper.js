@@ -54,26 +54,10 @@ const startInterval = async (discordClient) => {
 };
 
 /**
- * This function sends review message to the specified channel
- * @param {Object} disgordClient Object of discord client.
- * @param {Array} reviews "Array of reviews."
+ * Send reviews to discord channel.
+ * @param {*} reviews Array of reviews objects.
+ * @param {*} discordClient Discord client object.
  */
-const sendMessage = async (reviews, discordClient) => {
-  if (reviews?.length) {
-    const channel = discordClient.channels.cache.get(channelId);
-    reviews?.forEach((element) => {
-      if (!element?.snippet) element["snippet"] = "None";
-      if (element?.user?.name) {
-        const reviewEmbed = new EmbedBuilder()
-          .setColor(0x0099ff)
-          .setURL(element?.user?.thumbnail)
-          .setTitle("⭐".repeat(element?.rating))
-          .setAuthor({
-            name: element?.user?.name,
-            iconURL: element?.user?.thumbnail,
-            url: element?.user?.link,
-          })
-          .setDescription(element?.snippet);
 
 const sendMessage = async (reviews, discordClient) => {
   console.log("process.env.channelID----------", process.env.channelID)
