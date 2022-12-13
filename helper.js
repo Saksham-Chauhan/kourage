@@ -1,10 +1,12 @@
+const { EmbedBuilder } = require("discord.js");
+const path = require("path");
+const fs = require("fs");
+
 const logger = require("./logger");
 const { getReviews } = require("./scrapper");
 const { channelID } = require("./config.json");
-const { EmbedBuilder } = require("discord.js");
 
-const INTERVAL_TIME = 6 * 60 * 60 * 1000;
-let REVIEWS = [];
+const INTERVAL_TIME = 12 * 60 * 60 * 1000;
 
 /**
  * This function fetch the google reviews after every 12 hours and send the latest reviews on discord channel.
@@ -14,26 +16,38 @@ let REVIEWS = [];
 const startInterval = async (discordClient) => {
   try {
     const { reviews } = await getReviews();
-    if (reviews.length) {
+    if (reviews?.length) {
       logger.info(
-        "Scrapping successfully done and sending reviews on discord."
+        "Scrapping successfully done!"
       );
     }
-    if (REVIEWS?.length === 0) {
-      REVIEWS = reviews;
-      sendMessage(REVIEWS, discordClient);
-    } else if (reviews?.length > REVIEWS?.length) {
-      const latestReviewsList = [];
-      for (let i = 0; i < reviews?.length; i++) {
-        if (i > reviews?.length - REVIEWS?.length) {
-          break;
-        }
-        latestReviewsList.push(reviews[reviews?.length - i - 1]);
-      }
-      if (latestReviewsList?.length)
-        sendMessage(latestReviewsList, discordClient);
+    const fileReviews = await readFromFile();
+    if (fileReviews === null) {
+      logger.info(
+        "Sending All review first time"
+      );
+      sendMessage(reviews, discordClient);
+      writeInFile(reviews);
+    } else if (reviews?.length > fileReviews.length) {
+      writeInFile(reviews);
+      const noOfLatestReview = reviews?.length - fileReviews?.length;
+      let count = 0;
+      let latestReviewsList = [];
+
+      reviews.every((item) => {
+        fileReviews.forEach((item2) => {
+          if (item?.user?.name === item2?.user?.name) {
+            latestReviewsList.push(item);
+            count++;
+          }
+          if (count === noOfLatestReview) return false;
+          else return false;
+        })
+      })
+      logger.info(`Find ${latestReviewsList.length} latest review`);
+      sendMessage(latestReviewsList, discordClient);
     }
-    setTimeout(startInterval, INTERVAL_TIME);
+    setTimeout(startInterval, 30 * 1000);
   } catch (error) {
     logger.error("Error in startInterval:", error);
   }
@@ -52,6 +66,7 @@ const sendMessage = async (reviews, discordClient) => {
       reviews?.forEach((element) => {
         if (!element?.snippet) element["snippet"] = "None";
         if (element?.user?.name) {
+          console.log(element?.user?.name)
           const reviewEmbed = new EmbedBuilder()
             .setColor(0x0099ff)
             .setURL(element?.user?.thumbnail)
@@ -72,6 +87,50 @@ const sendMessage = async (reviews, discordClient) => {
   } catch (error) {
     logger.error("Error in 'sendMessage' func and error is:", error);
   }
+};
+
+const readFromFile = () => {
+  const filePath = path.join(__dirname, "review.json");
+  return new Promise((resolve, reject) => {
+    try {
+      fs.readFile(filePath, "utf8", async (err, jsonString) => {
+        if (err) {
+          logger.error(
+            "Error in readFromFile func during file reading and error is",
+            err
+          );
+          return resolve(null);
+        } else {
+          let data = null;
+          if (jsonString) data = JSON.parse(jsonString);
+          logger.info("File read successfully!");
+          return resolve(data);
+        }
+      });
+    } catch (error) {
+      logger.error("Error in readFromFile func and error is", error);
+      resolve(null);
+    }
+  });
+};
+
+const writeInFile = (data) => {
+  const filePath = path.join(__dirname, "review.json");
+  return new Promise((resolve, reject) => {
+    try {
+      fs.writeFile(filePath, JSON.stringify(data), (err) => {
+        if (err) {
+          logger.error("Error in writeInFile func and error is:", err);
+        } else {
+          logger.info("File write successfully!");
+          resolve(true);
+        }
+      });
+    } catch (error) {
+      logger.error("Error in writeInFile func and error is", error);
+      resolve(false);
+    }
+  });
 };
 
 module.exports = { startInterval };
