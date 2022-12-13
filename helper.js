@@ -1,10 +1,10 @@
 const { EmbedBuilder } = require("discord.js");
 const path = require("path");
 const fs = require("fs");
+require('dotenv').config()
 
 const logger = require("./logger");
 const { getReviews } = require("./scrapper");
-const { channelID } = require("./config.json");
 
 const INTERVAL_TIME = 12 * 60 * 60 * 1000;
 
@@ -47,7 +47,7 @@ const startInterval = async (discordClient) => {
       logger.info(`Find ${latestReviewsList.length} latest review`);
       sendMessage(latestReviewsList, discordClient);
     }
-    setTimeout(startInterval, 30 * 1000);
+    setTimeout(startInterval, INTERVAL_TIME);
   } catch (error) {
     logger.error("Error in startInterval:", error);
   }
@@ -60,9 +60,10 @@ const startInterval = async (discordClient) => {
  */
 
 const sendMessage = async (reviews, discordClient) => {
+  console.log("process.env.channelID----------", process.env.channelID)
   try {
     if (reviews?.length) {
-      const channel = discordClient.channels.cache.get(channelID);
+      const channel = discordClient.channels.cache.get(process.env.channelID);
       reviews?.forEach((element) => {
         if (!element?.snippet) element["snippet"] = "None";
         if (element?.user?.name) {

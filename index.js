@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
-const { botToken } = require("./config.json");
+require('dotenv').config()
 
 const { startInterval } = require("./helper");
 const logger = require("./logger");
@@ -14,5 +14,5 @@ discordClient.on("ready", async () => {
     logger.error("Error during Login:", error);
   }
 });
-
-discordClient.login(botToken);
+console.log("process.env.botToken", process.env.botToken);
+discordClient.login(process.env.botToken);
