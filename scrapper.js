@@ -107,6 +107,7 @@ async function getLocalPlaceReviews() {
     } else {
       browser = await puppeteer.launch({
         headless: true,
+        userDataDir: "path/to/directory",
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
     }
