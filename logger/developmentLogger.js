@@ -1,5 +1,5 @@
 const { createLogger, format, transports } = require("winston");
-const { combine, timestamp, colorize, printf } = format;
+const { combine, timestamp, printf,splat,simple } = format;
 
 const initializeBotLogger = () => {
   const myFormat = printf(({ level, message, timestamp }) => {
@@ -7,7 +7,8 @@ const initializeBotLogger = () => {
   });
   return createLogger({
     level: "debug",
-    format: combine(colorize(), timestamp({ format: "HH:mm:ss" }), myFormat),
+    format: combine(   splat(),
+    simple(),timestamp(), myFormat),
     transports: [new transports.Console()],
   });
 };

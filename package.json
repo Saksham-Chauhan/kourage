@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "deploy": "cross-env NODE_ENV=production node index.js"
   },
   "author": "koders",
   "license": "ISC",
   "dependencies": {
+    "cross-env": "^7.0.3",
     "discord.js": "^14.7.1",
     "dotenv": "^16.0.3",
     "node-schedule": "^2.1.0",
