@@ -1,18 +1,20 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 require('dotenv').config()
-
-const { startInterval } = require("./helper");
-const logger = require("./logger");
+const schedule = require('node-schedule');
 
 const discordClient = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 discordClient.on("ready", async () => {
-  try {
-    logger.info(`Logged in as ${discordClient.user.tag}!`);
-    startInterval(discordClient);
-  } catch (error) {
-    logger.error("Error during Login:", error);
-  }
+    try {
+        console.log(`Logged in as ${discordClient.user.tag}!`);
+        const job = schedule.scheduleJob('00 12 * * *',async function(){
+            const channel = discordClient.channels.cache.get(process.env.channelID);
+            await channel.send('The answer to life, the universe, and everything!');
+          });
+    } catch (error) {
+        console.log("Error during Login:", error);
+    }
 });
-console.log("process.env.botToken", process.env.botToken);
+
 discordClient.login(process.env.botToken);
+
