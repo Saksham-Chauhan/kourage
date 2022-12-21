@@ -12,10 +12,12 @@ discordClient.on("ready", async () => {
             const channel = discordClient.channels.cache.get(process.env.channelID);
             await channel.send('The answer to life, the universe, and everything!');
             logger.info("Webhook send with content:'The answer to life, the universe, and everything!'");
+
           });
     } catch (error) {
         logger.error(`Error during sending webhook and error is: ${error}`);
     }
 });
 
-discordClient.login(process.env.botToken);
+
+discordClient.login(process.env.TOKEN);
